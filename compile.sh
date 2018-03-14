@@ -1,0 +1,2 @@
+stack clean
+stack build
