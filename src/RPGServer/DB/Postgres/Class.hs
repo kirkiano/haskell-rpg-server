@@ -86,6 +86,7 @@ instance MonadIO m => DB (P m) where
 
   getPlace pid = do
     let sql = "select P.name, \
+             \        P.description, \
              \        E.id, \
              \        R.name, \
              \        X.name, \
@@ -99,10 +100,11 @@ instance MonadIO m => DB (P m) where
              \ inner join world_place D on D.id = E.destination_id \
              \ where P.id = ?"
     rs <- pgQ sql $ Only pid
-    let getExit (_, eid, rn, x, t, did, dn)      = W.ExitRec eid rn x t (did, dn)
-        (pName, _, _, _, _, _, _) {- repeated -} = rs !! 0
+    let getExit (_, _, eid, rn, x, t, did, dn) = W.ExitRec eid rn x t (did, dn)
+        (pName, pDesc, _, _, _, _, _, _) {- repeated -} = rs !! 0
         exits                                    = map getExit rs
-    return $ W.PlaceRec pid pName exits
+    liftIO $ sayn $ "pDesc = " ++ show pDesc
+    return $ W.PlaceRec pid pName pDesc exits
 
   getContents pid = pgQ sql (Only pid) >>= f where
     sql = "select T.id, T.name \

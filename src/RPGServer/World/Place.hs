@@ -18,12 +18,13 @@ import Data.Aeson             ( (.=),
 import RPGServer.World.Common ( ID(..),
                                 Name(..) )
 
-type Direction   = Text
-type ExitID      = Int
-type ExitName    = Text
-type PlaceID     = Int
-type PlaceName   = Text
-type Preposition = Text
+type Direction        = Text
+type ExitID           = Int
+type ExitName         = Text
+type PlaceID          = Int
+type PlaceName        = Text
+type PlaceDescription = Text
+type Preposition      = Text
 
 
 data ExitRec = ExitRec {
@@ -54,6 +55,7 @@ class (ID a, Name a) => Place a where
 data PlaceRec = PlaceRec {
   placeId    :: PlaceID,
   placeName  :: PlaceName,
+  placeDesc  :: Maybe PlaceDescription,
   placeExits :: [ExitRec]
 } deriving Show
 
@@ -70,5 +72,6 @@ instance ToJSON PlaceRec where
   toJSON p = object [
     "pid"   .= idn p,
     "name"  .= name p,
+    "desc"  .= placeDesc p,
     "exits" .= exits p
     ]
