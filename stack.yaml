@@ -58,23 +58,23 @@ extra-deps:
 - regex-compat-0.95.1
 - resource-pool-0.2.3.2
 - text-1.2.2.2
-- time-1.8.0.2
+- time-1.7.0.1
 - unix-2.7.2.2
 - utf8-string-1.0.1.1
 - websockets-0.12.2.0
 - Workflow-0.8.3
 - git: https://github.com/kirkiano/haskell-loggit.git
-  commit: d21e51e243aa033fcfafbf82ec67f10440270c5b
+  commit: 6f49d9930747549657c931095aaa9e94786dc50f
 - git: https://github.com/kirkiano/haskell-misc-utils.git
   commit: 164b0e2e1249a2a3ce14122e21c1694977f383ba
 - git: https://github.com/kirkiano/haskell-bouncer.git
-  commit: 9b041270b7751b6d061b746fbbc4ed1cf9dac9f5
+  commit: cfce43e0c40030c3ea1906089ec8a6b14bb4c53c
 - git: https://github.com/kirkiano/haskell-send-receive.git
   commit: 16e6decbf2d3dd390d03546db1cb4b3aad865282
 - git: https://github.com/kirkiano/haskell-thread-mailbox.git
   commit: 51aaec70a82af1b3e3849e401bc665df750b6bad
 - git: https://github.com/kirkiano/haskell-forwarder.git
-  commit: 5bb3e8381c1a683201a284460ff7e0a8cfec1450
+  commit: 433e6711293b3774f85b4600e8f3cb31008233ac
 # Override default flag values for local packages and extra-deps
 # flags: {}
 

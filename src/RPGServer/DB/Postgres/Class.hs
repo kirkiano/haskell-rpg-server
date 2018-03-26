@@ -19,13 +19,16 @@ import Database.PostgreSQL.Simple as PG   ( ConnectInfo(..),
                                             connect,
                                             close,
                                             execute,
+                                            In(..),
                                             Only(..),
                                             query )
 import qualified RPGServer.Log            as L
 import qualified RPGServer.World          as W
 import qualified Crypto.KDF.PBKDF2        as K
 import RPGServer.DB.Error                 ( DBError(..) )
-import RPGServer.DB.Class                 ( DB(..),
+import RPGServer.DB.Class                 ( AuthDB(..),
+                                            AdminDB(..),
+                                            PlayDB(..),
                                             MakeDB(..) )
 import RPGServer.DB.Postgres.Common       ( P,
                                             pgE,
@@ -47,7 +50,7 @@ instance (MonadIO m, L.Log m L.Main) => MakeDB m Conn ConnectInfo where
                     L.log L.Debug L.DisconnectedFromPostgres
 
 
-instance MonadIO m => DB (P m) where
+instance MonadIO m => AuthDB (P m) where
 
   authUser uname pw = do
     let sql = "select C.thing_ptr_id, U.password \
@@ -73,6 +76,18 @@ instance MonadIO m => DB (P m) where
              \ where thing_ptr_id = ?"
     db <- asks _db
     void $ liftIO $ execute db sql (b, cid)
+
+
+instance MonadIO m => AdminDB (P m) where
+  markLoggedInSet = pgE sql . Only . In where
+    sql = "begin; \
+         \ update world_character set is_logged_in = false; \
+         \ update world_character set is_logged_in = true \
+         \ where thing_ptr_id in ?; \
+         \ commit"
+
+
+instance MonadIO m => PlayDB (P m) where
 
   getThing tid = pgQ sql (Only tid) >>= f where
     sql   = "select name from world_thing where id = ?"
@@ -103,7 +118,6 @@ instance MonadIO m => DB (P m) where
     let getExit (_, _, eid, rn, x, t, did, dn) = W.ExitRec eid rn x t (did, dn)
         (pName, pDesc, _, _, _, _, _, _) {- repeated -} = rs !! 0
         exits                                    = map getExit rs
-    liftIO $ sayn $ "pDesc = " ++ show pDesc
     return $ W.PlaceRec pid pName pDesc exits
 
   getContents pid = pgQ sql (Only pid) >>= f where

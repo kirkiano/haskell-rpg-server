@@ -37,7 +37,7 @@ class HasCID m => Play m where
   join         :: Forward m             -> D.D m M.Message
 
 
-instance (DB.DB m,
+instance (DB.PlayDB m,
           HasCID m,
           L.Log m L.Game) => Play m where
 
@@ -77,7 +77,7 @@ instance (DB.DB m,
   quit = joinOrQuit False
 
 
-joinOrQuit :: (DB.DB m, HasCID m, L.Log m L.Game)
+joinOrQuit :: (DB.PlayDB m, HasCID m, L.Log m L.Game)
               =>
               Bool ->
               Forward m ->

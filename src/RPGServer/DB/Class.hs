@@ -3,7 +3,9 @@
              FunctionalDependencies #-}
 
 module RPGServer.DB.Class ( D,
-                            DB(..),
+                            AuthDB(..),
+                            AdminDB(..),
+                            PlayDB(..),
                             MakeDB(..) ) where
 
 import qualified RPGServer.World               as W
@@ -16,9 +18,16 @@ class Monad m => MakeDB m d p | d -> p where
   disconnect :: d -> m ()
 
 
-class Monad m => DB m where
+class Monad m => AuthDB m where
   authUser        :: A.Username -> A.Password    -> m (Maybe W.CharacterID)
   loginCharacter  :: Bool       -> W.CharacterID -> m ()
+
+
+class Monad m => AdminDB m where
+  markLoggedInSet :: [W.CharacterID] -> D m Integer
+
+
+class Monad m => PlayDB m where
   getThing        :: W.ThingID  ->                  D m W.ThingRec
   getLocation     :: W.ThingID  ->                  D m W.PlaceID
   getPlace        :: W.PlaceID  ->                  D m W.PlaceRec

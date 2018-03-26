@@ -14,7 +14,9 @@ import RPGServer.Common
 import Prelude hiding              ( getContents )
 import qualified RPGServer.Log     as L
 import RPGServer.DB.Class          ( MakeDB(..),
-                                     DB(..) )
+                                     AuthDB(..),
+                                     AdminDB(..),
+                                     PlayDB(..) )
 
 data CachedDB d c = CachedDB {
   _db    :: d,
@@ -46,8 +48,14 @@ instance (Monad m,
 ------------------------------------------------------------
 
 instance (Monad m,
-          DB (ReaderT d m),
-          DB (ReaderT c m)) => DB (C d c m) where
+          AdminDB (ReaderT d m),
+          AdminDB (ReaderT c m)) => AdminDB (C d c m) where
+  markLoggedInSet = mapExceptT (withReaderT _db) . markLoggedInSet
+
+
+instance (Monad m,
+          AuthDB (ReaderT d m),
+          AuthDB (ReaderT c m)) => AuthDB (C d c m) where
 
   authUser u p = do
     db <- asks _db
@@ -56,6 +64,11 @@ instance (Monad m,
   loginCharacter b cid = do
     db <- asks _db
     lift $ runReaderT (loginCharacter b cid) db
+
+
+instance (Monad m,
+          PlayDB (ReaderT d m),
+          PlayDB (ReaderT c m)) => PlayDB (C d c m) where
 
   getThing tid = ExceptT $ do
     cache <- asks _cache

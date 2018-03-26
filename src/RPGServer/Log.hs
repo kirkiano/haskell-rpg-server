@@ -25,6 +25,8 @@ type Port = Int
 
 data Main = StartingForwarder
           | StoppingForwarder
+          | StartingForwarderWatcher
+          | StoppingForwarderWatcher
           | AttemptingToConnectToRedis
           | CannotConnectToRedis String
           | ConnectedToRedis

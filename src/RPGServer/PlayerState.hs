@@ -15,7 +15,8 @@ import Prelude hiding                    ( getContents )
 import RPGServer.Log                     as L
 import qualified RPGServer.World         as W
 import RPGServer.Play                    ( HasCID(..) )
-import RPGServer.DB.Class                ( DB(..) )
+import RPGServer.DB.Class                ( AuthDB(..),
+                                           PlayDB(..) )
 
 
 data PlayerState = PlayerState { _cid  :: W.CharacterID }
@@ -34,9 +35,12 @@ instance L.Log m L.Game => L.Log (PS m) L.Game where
   logWrite lev = lift . (L.logWrite lev)
 
 
-instance DB m => DB (PS m) where
+instance AuthDB m => AuthDB (PS m) where
   authUser u       = lift . (authUser u)
   loginCharacter b = lift . (loginCharacter b)
+
+
+instance PlayDB m => PlayDB (PS m) where
   getThing         = mapExceptT lift . getThing
   getLocation      = mapExceptT lift . getLocation
   getPlace         = mapExceptT lift . getPlace

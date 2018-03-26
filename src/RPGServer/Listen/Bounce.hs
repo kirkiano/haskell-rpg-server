@@ -28,7 +28,8 @@ import qualified RPGServer.Listen.Auth.Message as A
 import qualified RPGServer.Listen.Connection   as C
 
 
-bounce :: (DB.DB m,
+bounce :: (DB.AuthDB m,
+           DB.PlayDB m,
            HasFork m,
            C.Client m a,
            L.Log m L.Auth,
@@ -51,7 +52,8 @@ reject c = SR.send c (S.Auth A.BadCredentials) >> C.closeServerQuit c
 
 
 admit :: (MonadIO m,
-          DB.DB m,
+          DB.AuthDB m,
+          DB.PlayDB m,
           C.Client m a,
           L.Log m L.Game)
          =>
@@ -84,7 +86,8 @@ admit reg dereg fw c cid = join >> runReaderT play (PlayerState cid) where
 
 
 challenge :: (MonadIO m,
-              DB.DB m,
+              DB.AuthDB m,
+              DB.PlayDB m,
               L.Log m L.Auth,
               C.Client m a)
              =>

@@ -18,9 +18,14 @@ module RPGServer.Global.Env ( Env(..),
 import RPGServer.Common
 import Prelude hiding                       ( getContents )
 import GHC.IO.Handle                        ( Handle )
+import qualified Forwarder.Log              as FL
 import qualified RPGServer.Log              as L
 import qualified RPGServer.Global.Settings  as S
-import RPGServer.DB.Class                   ( DB(..),
+import RPGServer.World                      ( CharacterID )
+import RPGServer.Message                    ( Message )
+import RPGServer.DB.Class                   ( AuthDB(..),
+                                              AdminDB(..),
+                                              PlayDB(..),
                                               MakeDB(..) )
 import RPGServer.DB.Caching                 ( CachedDB(..) )
 import RPGServer.DB.Pool                    ( Pool,
@@ -90,9 +95,21 @@ instance L.Log G L.General where
 
 ------------------------------------------------------------
 
-instance DB G where
+instance L.Log G (FL.ForwardLog CharacterID m Message) where
+  logWrite lev = lift . (L.logWrite lev)
+
+------------------------------------------------------------
+
+instance AuthDB G where
   authUser u       = withReaderT dBase . (authUser u)
   loginCharacter b = withReaderT dBase . (loginCharacter b)
+
+
+instance AdminDB G where
+  markLoggedInSet = mapExceptT (withReaderT dBase) . markLoggedInSet
+
+
+instance PlayDB G where
   getThing         = mapExceptT (withReaderT dBase) . getThing
   getLocation      = mapExceptT (withReaderT dBase) . getLocation
   getPlace         = mapExceptT (withReaderT dBase) . getPlace

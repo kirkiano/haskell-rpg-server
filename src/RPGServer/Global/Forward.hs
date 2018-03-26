@@ -6,52 +6,50 @@
              FlexibleInstances #-}
 
 module RPGServer.Global.Forward ( F,
---                                  Forward(..),
-                                  createForwardTWM,
-                                  destroyForwardTWM ) where
+                                  createForwarderTWM,
+                                  destroyForwarderTWM,
+                                  forkForwarderWatcher ) where
 
 import RPGServer.Common
-import Control.Workflow                     ( HasFork )
+import qualified Control.Workflow           as W
+import qualified Control.Concurrent.MVar    as V
+import Control.Concurrent                   as C
 import Control.Concurrent.ThreadWithMailbox as T
-import qualified SendReceive                as SR
+import Data.Map.Lazy                        as M
 import qualified Forwarder                  as F
 import qualified RPGServer.Log              as L
-import RPGServer.DB.Class                   ( DB(..) )
+import RPGServer.DB.Class                   ( AdminDB(..) )
 import RPGServer.World                      ( CharacterID )
 import RPGServer.Message                    ( Message )
 
 
-type FTWM a m g = TWM (F.Request a m g)
-type F        m = FTWM CharacterID m Message
+type F m = F.FTWM CharacterID m Message
+type FL m = F.ForwardLog CharacterID m Message
 
 
-createForwardTWM :: (Ord a,
-                     HasFork m,
-                     L.Log m L.Main) => m (FTWM a m g)
-createForwardTWM = do
+createForwarderTWM :: (W.HasFork m,
+                       L.Log m L.Main,
+                       L.Log m (FL m)) => m (F m)
+createForwarderTWM = do
   L.log L.Info L.StartingForwarder
   T.forkTWM $ Synchronous F.forwarder
 
 
-destroyForwardTWM :: (MonadIO m,
-                      L.Log m L.Main) => FTWM a m g -> m ()
-destroyForwardTWM f = do
+destroyForwarderTWM :: (MonadIO m, L.Log m L.Main) => (F m) -> m ()
+destroyForwarderTWM f = do
   L.log L.Info L.StoppingForwarder
   T.killTWM f
 
-------------------------------------------------------------
-{-
-class Monad m => Forward a g m where
-  forward :: g -> [a] -> m ()
 
-instance MonadIO m => Forward a g (ReaderT (FTWM a m g) m) where
-  forward msg ids = do let f = F.Forward msg ids
-                           r = const (return True :: m Bool)
-                           q = F.Request f r
-                       fw <- ask
-                       void $ SR.send fw q
-
-instance DB m => DB (ReaderT (F m) m) where
-  authUser u = lift . (authUser u)
-  getThing   = mapExceptT lift . getThing
--}
+forkForwarderWatcher :: (W.HasFork m,
+                         L.Log m L.Main,
+                         AdminDB m) =>
+                        F m -> Int -> m C.ThreadId
+forkForwarderWatcher f waitMuSecs = do
+  L.log L.Info L.StartingForwarderWatcher
+  (send, recv) <- F.fwdSRMVar f <$> liftIO V.newEmptyMVar
+  W.fork $ forever $ do
+    void $ send F.GetRegistrants
+    (F.Registrants rs) <- recv
+    void $ runExceptT $ markLoggedInSet $ M.keys rs
+    liftIO $ C.threadDelay waitMuSecs

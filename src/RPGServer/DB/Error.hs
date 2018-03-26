@@ -17,11 +17,12 @@ type D = ExceptT DBError
 
 data DBError = InvalidThingID ThingID
              | InvalidPlaceID PlaceID
-             | InvalidCharacterID CharacterID
+             | InvalidCharacterIDs [CharacterID]
              | InvalidExitID ExitID
              | DataMappingError String
              | GeneralError String
              | CannotConnect String
+             | Unimplemented String
              deriving Show
 
 
@@ -35,9 +36,9 @@ instance ToJSON DBError where
     "type"  .= ("invalidPlaceID" :: Text),
     "value" .= pid]
 
-  toJSON (InvalidCharacterID cid) = object [
-    "type"  .= ("invalidCharacterID" :: Text),
-    "value" .= cid]
+  toJSON (InvalidCharacterIDs cids) = object [
+    "type"  .= ("invalidCharacterIDs" :: Text),
+    "value" .= cids]
 
   toJSON (InvalidExitID ptid) = object [
     "type"  .= ("invalidExitID" :: Text),
@@ -54,3 +55,7 @@ instance ToJSON DBError where
   toJSON (CannotConnect e) = object [
     "type"  .= ("cannotConnect" :: Text),
     "value" .= e]
+
+  toJSON (Unimplemented msg) = object [
+    "type"  .= ("unimplmeneted" :: Text),
+    "value" .= msg]

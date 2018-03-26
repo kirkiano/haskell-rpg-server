@@ -28,7 +28,9 @@ import Database.Redis             ( Redis,
 import RPGServer.World            ( ThingID )
 import RPGServer.DB.Error         ( D,
                                     DBError(..) )
-import RPGServer.DB.Class         ( DB(..),
+import RPGServer.DB.Class         ( AuthDB(..),
+                                    AdminDB(..),
+                                    PlayDB(..),
                                     MakeDB(..) )
 
 
@@ -57,12 +59,16 @@ type R  m = ReaderT Conn m
 type DR m = D (R m)
 
 
-instance MonadIO m => DB (R m) where
-
-  authUser _ _ = return Nothing
-
+instance MonadIO m => AuthDB (R m) where
+  authUser       _ _ = return Nothing
   loginCharacter _ _ = return ()
 
+
+instance MonadIO m => AdminDB (R m) where
+  markLoggedInSet _ = throwE $ Unimplemented "Redis: markLoggedInSet"
+
+
+instance MonadIO m => PlayDB (R m) where
   getThing tid = fetchAssoc Thing tid >>= parse2obj
 
 {-

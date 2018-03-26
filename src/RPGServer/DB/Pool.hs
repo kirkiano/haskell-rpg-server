@@ -19,7 +19,9 @@ import Data.Pool             ( Pool,
                                withResource )
 import qualified RPGServer.Log  as L
 import RPGServer.DB.Error    ( D )
-import RPGServer.DB.Class    ( DB(..),
+import RPGServer.DB.Class    ( AuthDB(..),
+                               AdminDB(..),
+                               PlayDB(..),
                                MakeDB(..) )
 
 
@@ -43,9 +45,16 @@ instance MakeDB L.L a r => MakeDB L.L (Pool a) (PoolParams r) where
 
 ------------------------------------------------------------
 
-instance DB (ReaderT a L.L) => DB (ReaderT (Pool a) L.L) where
+instance AuthDB (ReaderT a L.L) => AuthDB (ReaderT (Pool a) L.L) where
   authUser uname      = liftSome . (authUser uname)
   loginCharacter b    = liftSome . (loginCharacter b)
+
+
+instance AdminDB (ReaderT a L.L) => AdminDB (ReaderT (Pool a) L.L) where
+  markLoggedInSet     = liftIt . markLoggedInSet
+
+
+instance PlayDB (ReaderT a L.L) => PlayDB (ReaderT (Pool a) L.L) where
   getThing            = liftIt . getThing
   getLocation         = liftIt . getLocation
   getPlace            = liftIt . getPlace
