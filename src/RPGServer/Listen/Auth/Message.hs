@@ -18,7 +18,7 @@ type Password = Text
 data Credentials = Credentials {
   user :: Username,
   pass :: Password
-} deriving (Generic, Show)
+} deriving (Generic, Show)  -- TODO: hide password
 
 instance J.FromJSON Credentials
 
