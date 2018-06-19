@@ -17,6 +17,7 @@ import RPGServer.Util.ByteString
 import qualified RPGServer.Message    as M
 import qualified RPGServer.Request    as R
 import RPGServer.Listen.Auth.Message  ( Username )
+import RPGServer.World.Thing          ( CharacterID )
 
 
 type L = ReaderT (Level, Handle) IO
@@ -66,7 +67,7 @@ data Auth = WaitingForCredentialsFrom String
           | AuthDBFailed Username
           | AuthLDAPSucceeded Username
           | AuthLDAPFailed Username
-          | UserAlreadyLoggedIn Username
+          | UserAlreadyLoggedIn CharacterID
           deriving Show
 
 

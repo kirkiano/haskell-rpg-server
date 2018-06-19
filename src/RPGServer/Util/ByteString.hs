@@ -3,16 +3,22 @@
              UndecidableInstances,
              MultiParamTypeClasses #-}
 
-module RPGServer.Util.ByteString ( ByteString,
-                                   FromBSMap(..),
-                                   ShowBS(..),
-                                   concat ) where
+module RPGServer.Util.ByteString ( ByteString
+                                 , FromBSMap(..)
+                                 , ShowBS(..)
+                                 , bs2s
+                                 , concat
+                                 , length) where
 
-import Prelude hiding         ( concat )
+import Prelude hiding         ( concat
+                              , length )
+import Data.Char              ( chr )
 import Data.Map               ( Map )
-import Data.ByteString        ( ByteString,
-                                concat,
-                                pack )
+import Data.ByteString        ( ByteString
+                              , concat
+                              , length
+                              , pack
+                              , unpack )
 
 ------------------------------------------------------------
 
@@ -35,10 +41,9 @@ saybn = sayn . (map (chr . fromEnum)) . unpack
 
 -}
 
-{-
 bs2s :: ByteString -> String
 bs2s = map (chr . fromEnum) . unpack
--}
+
 
 s2bs :: String -> ByteString
 s2bs = pack . (map $ fromIntegral . fromEnum)
