@@ -14,7 +14,8 @@ import qualified RPGServer.Global           as G
 import RPGServer.World                      ( CharacterID )
 import qualified RPGServer.Listen.Websocket as WS
 import qualified RPGServer.Listen.Socket    as S
-import RPGServer.Listen.Bounce              ( bounce )
+import RPGServer.Listen.Bounce              ( admit
+                                            , bounce )
 
 
 data TopEnv = TopEnv {
@@ -51,8 +52,10 @@ main = G.getSettings >>= go where
           tries     = G.connTries s
           sPort     = G.tcpPort s
           wPort     = G.websockPort s
-          slst      = S.listen  sPort (bounce reg dereg fw alyHr tOut tries)
-          wlst      = WS.listen wPort (bounce reg dereg fw alyHr tOut tries)
+          ssPort    = G.sessionServerPort s
+          slst      = S.listen  sPort $ bounce reg dereg fw alyHr tOut tries
+          wlst      = WS.listen ssPort wPort
+                      (\c cid -> admit reg dereg fw alyHr c cid)
           frk       = C.forkIO . (G.runG e lh)
           alyHr :: CharacterID -> G.G Bool
           alyHr cid = do

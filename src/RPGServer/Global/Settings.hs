@@ -26,6 +26,7 @@ data Settings = Settings {
 
   tcpPort           :: Int,
   websockPort       :: Int,
+  sessionServerPort :: Int,
   
   connTries         :: B.NumTriesLeft, -- max allowed number of login attempts
   connTimeout       :: NominalDiffTime,
@@ -44,6 +45,7 @@ instance Show Settings where
     ("log threshold",                     show $ logThresh s),
     ("tcp port",                          show $ tcpPort s),
     ("websocket port",                    show $ websockPort s),
+    ("sessionServer port",                show $ sessionServerPort s),
     ("max login attempts per connection", show $ connTries s),
     ("max time to login (seconds)",       show $ connTimeout s),
     ("postgres settings",                 show $ pgSettings s),
@@ -91,6 +93,7 @@ ss2s s = return $ Settings {
 
   tcpPort           = _tcpPort s,
   websockPort       = _tcpPort s + 1000,
+  sessionServerPort = _tcpPort s + 2000,
 
   connTries         = 3,
   connTimeout       = 300,

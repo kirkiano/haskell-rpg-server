@@ -7,7 +7,8 @@
              ScopedTypeVariables,
              MultiParamTypeClasses #-}
 
-module RPGServer.Listen.Bounce ( bounce ) where
+module RPGServer.Listen.Bounce ( admit
+                               , bounce ) where
 
 import RPGServer.Common
 import Control.Workflow                        ( HasFork )
@@ -44,7 +45,7 @@ bounce :: (DB.AuthDB m,
           a ->
           m ()
 bounce reg dereg fw alreadyHere tOut nTries = do
-  B.makeBouncer tOut nTries (admit reg dereg fw) reject (challenge alreadyHere)
+  B.makeBouncer tOut nTries (admit reg dereg fw alreadyHere) reject challenge
 
 
 reject :: C.Client m a => a -> m ()
@@ -55,22 +56,28 @@ admit :: (MonadIO m,
           DB.AuthDB m,
           DB.PlayDB m,
           C.Client m a,
+          L.Log m L.Auth,
           L.Log m L.Game)
          =>
          (CharacterID -> a -> m ()) ->
          (CharacterID -> m ()) ->
          (S.Message -> [CharacterID] -> m ()) ->
+         (CharacterID -> m Bool) ->
          a ->
          CharacterID ->
          m ()
-admit reg dereg fw c cid = join >> runReaderT play (PlayerState cid) where
-  join = do DB.loginCharacter True cid
+admit reg dereg fw alreadyHere c cid = do
+  here <- alreadyHere cid
+  if not here
+    then do void $ SR.send c $ S.Auth A.AlreadyLoggedIn
+            L.log L.Info $ L.UserAlreadyLoggedIn cid
+            reject c
+    else do void $ SR.send c $ S.Auth A.Welcome
+            DB.loginCharacter True cid
             reg cid c
-  quit = do lift $ C.closeClientQuit c
-            lift $ dereg cid
-            DB.loginCharacter False cid
+            runReaderT play $ PlayerState cid
+  where
   play = resp Q.Join >> loop
-  resp = runExceptT . (respond $ \m -> lift . (fw m))
   loop = do
     r <- lift $ SR.waitRecv c
     case r of
@@ -83,6 +90,10 @@ admit reg dereg fw c cid = join >> runReaderT play (PlayerState cid) where
           (Just m)               -> do
             b <- lift . (SR.send c) $ m
             if not b then quit else loop
+  quit = do lift $ C.closeClientQuit c
+            lift $ dereg cid
+            DB.loginCharacter False cid
+  resp = runExceptT . (respond $ \m -> lift . (fw m))
 
 
 challenge :: (MonadIO m,
@@ -91,12 +102,11 @@ challenge :: (MonadIO m,
               L.Log m L.Auth,
               C.Client m a)
              =>
-             (CharacterID -> m Bool) ->
              TM.NominalDiffTime ->
              B.NumTriesLeft ->
              a ->
              m (Maybe CharacterID)
-challenge alreadyHere _ _ c = do
+challenge _ _ c = do
   L.log L.Debug $ L.WaitingForCredentialsFrom $ show c
   credsR <- SR.waitRecv c
   case credsR of
@@ -114,16 +124,5 @@ challenge alreadyHere _ _ c = do
                   Nothing -> L.AuthLDAPFailed
             L.log L.Info $ t uname
             return cidM
-      r <- maybe tryLDAP (return . Just) =<< tryDB
-      case r of
-        Nothing      -> reject c >> return Nothing
-        j@(Just cid) -> do
-          here <- alreadyHere cid
-          if here
-            then do void $ SR.send c $ S.Auth A.AlreadyLoggedIn
-                    L.log L.Info $ L.UserAlreadyLoggedIn $ A.user creds
-                    C.closeServerQuit c
-                    return Nothing
-            else do void $ SR.send c $ S.Auth A.Welcome
-                    return j
-    _ -> reject c >> return Nothing
+      maybe tryLDAP (return . Just) =<< tryDB
+    _ -> return Nothing

@@ -8,17 +8,22 @@
 
 module RPGServer.Listen.Websocket ( listen ) where
 
+import Prelude hiding                        ( concat )
 import RPGServer.Common
 import RPGServer.Util.ByteString
+import Data.CaseInsensitive                  ( CI(..) )
 import qualified Data.ByteString.Lazy        as BZ
 import qualified Data.IORef                  as IOR
 import qualified Data.Time                   as T
 import qualified Network.WebSockets          as WS
+import qualified Network.Simple.TCP          as N
 import qualified RPGServer.Log               as L
 import qualified SendReceive                 as SR
 import qualified RPGServer.Listen.Connection as C
 import qualified RPGServer.Listen.Wrap       as W
 import qualified RPGServer.Global.Env        as G
+import RPGServer.World.Thing                 ( CharacterID )
+import Web.Cookie                            ( parseCookies )
 
 
 data Websocket = Websocket {
@@ -84,8 +89,11 @@ instance (MonadIO m,
       return SR.CannotReceive
 
 
-listen :: Int -> (forall c. C.Client G.G c => c -> G.G ()) -> G.G ()
-listen port continue =
+listen :: Int ->
+          Int ->
+          (forall c. C.Client G.G c => c -> CharacterID -> G.G ()) ->
+          G.G ()
+listen s2CIDport port continue =
   G.gBracket
   (do L.log L.Info $ L.ListeningForConnections L.Websocket port
       env <- ask
@@ -95,23 +103,55 @@ listen port continue =
   (\(env, lh) -> liftIO $ do
       WS.runServer "127.0.0.1" port $ \pc -> G.runG env lh $
         G.gCatch
-        (enter continue pc)
+        (enter (getCIDfromPC $ session2CID s2CIDport) continue pc)
         (\e -> L.log L.Critical $ L.General $ show (e :: SomeException)))
 
 
-enter :: (forall c. C.Client G.G c => c -> G.G ()) ->
+
+enter :: (WS.PendingConnection -> IO CharacterID) ->
+         (forall c. C.Client G.G c => c -> CharacterID -> G.G ()) ->
          WS.PendingConnection ->
          G.G ()
-enter continue pc = do
+enter pc2CID continue pc = do
   L.log L.Debug $ L.General "incoming websocket pending conn"
   G.gBracketOnError
-    (do c      <- liftIO $ WS.acceptRequest pc
+    (do cid    <- liftIO $ pc2CID pc -- call here, to catch the exception here
+        c      <- liftIO $ WS.acceptRequest pc
         L.log L.Debug $ L.General "websocket pending conn accepted"
         t      <- liftIO T.getCurrentTime
         isopen <- liftIO $ IOR.newIORef True
         let w :: W.Wrapped G.G Websocket
             w = W.wrapConn $ Websocket t c isopen
-        return w)
-    (\wc -> do L.log L.Critical L.WebsocketError
-               C.closeInternalError wc)
-    continue
+        return (w, cid))
+    (\(wc, _) -> do L.log L.Critical L.WebsocketError
+                    C.closeInternalError wc)
+    (uncurry continue)
+
+
+type SessionKey = ByteString
+
+
+getCIDfromPC :: (SessionKey -> IO CharacterID) ->
+                WS.PendingConnection ->
+                IO CharacterID
+getCIDfromPC s2c pc = getCookie >>= getKey >>= s2c where
+  getCookie = maybe err return mC where
+    mC    = lookup ("cookie" :: CI ByteString) hdrs
+    hdrs  = WS.requestHeaders $ WS.pendingRequest pc
+    err   = ioError $ userError $ "Can't find cookie in headers: " ++ show hdrs
+  getKey cookie = maybe err return mK where
+    mK    = lookup "sessionid" pairs
+    pairs = parseCookies cookie
+    err   = ioError $ userError $ eMsg ++ show cookie
+    eMsg  = "Can't find sessionid in cookie: "
+
+
+session2CID :: Int -> SessionKey -> IO CharacterID
+session2CID s2CIDPort k = do
+  let err    = ioError $ userError $ errMsg ++ show k
+      errMsg = "Failed to obtain CharacterID for session key "
+      parse cidS = return (read cidS :: Int) -- cid is int, should never blow up
+  N.connect "127.0.0.1" (show s2CIDPort) $ \(sock, _) -> do
+    N.send sock k
+    mCID <- N.recv sock 16 -- safety - far fewer than 16 digits are expected
+    maybe err (parse . bs2s) mCID
