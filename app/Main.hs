@@ -53,18 +53,10 @@ main = G.getSettings >>= go where
           sPort     = G.tcpPort s
           wPort     = G.websockPort s
           ssPort    = G.sessionServerPort s
-          slst      = S.listen  sPort $ bounce reg dereg fw alyHr tOut tries
+          slst      = S.listen  sPort $ bounce reg dereg fw tOut tries
           wlst      = WS.listen ssPort wPort
-                      (\c cid -> admit reg dereg fw alyHr c cid)
+                      (\c cid -> admit reg dereg fw c cid)
           frk       = C.forkIO . (G.runG e lh)
-          alyHr :: CharacterID -> G.G Bool
-          alyHr cid = do
-            (sendFwd, recvFwd) <- F.fwdSR f -- get response via recvFwd
-            void $ sendFwd $ F.GetRegistrant cid
-            r <- recvFwd
-            return $ case r of
-              F.Registrant _ _ -> True
-              _                -> False
       sltid <- frk slst
       wltid <- frk wlst
       return $ TopEnv e f fwtch wltid sltid
