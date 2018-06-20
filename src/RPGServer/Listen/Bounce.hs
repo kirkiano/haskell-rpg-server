@@ -68,7 +68,7 @@ admit :: (MonadIO m,
          m ()
 admit reg dereg fw alreadyHere c cid = do
   here <- alreadyHere cid
-  if not here
+  if here
     then do void $ SR.send c $ S.Auth A.AlreadyLoggedIn
             L.log L.Info $ L.UserAlreadyLoggedIn cid
             reject c
