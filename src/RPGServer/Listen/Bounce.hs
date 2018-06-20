@@ -39,13 +39,12 @@ bounce :: (DB.AuthDB m,
           (CharacterID -> a -> m ()) ->
           (CharacterID -> m ()) ->
           (S.Message -> [CharacterID] -> m ()) ->
-          (CharacterID -> m Bool) ->
           TM.NominalDiffTime ->
           B.NumTriesLeft ->
           a ->
           m ()
-bounce reg dereg fw alreadyHere tOut nTries = do
-  B.makeBouncer tOut nTries (admit reg dereg fw alreadyHere) reject challenge
+bounce reg dereg fw tOut nTries = do
+  B.makeBouncer tOut nTries (admit reg dereg fw) reject challenge
 
 
 reject :: C.Client m a => a -> m ()
@@ -62,20 +61,14 @@ admit :: (MonadIO m,
          (CharacterID -> a -> m ()) ->
          (CharacterID -> m ()) ->
          (S.Message -> [CharacterID] -> m ()) ->
-         (CharacterID -> m Bool) ->
          a ->
          CharacterID ->
          m ()
-admit reg dereg fw alreadyHere c cid = do
-  here <- alreadyHere cid
-  if not here
-    then do void $ SR.send c $ S.Auth A.AlreadyLoggedIn
-            L.log L.Info $ L.UserAlreadyLoggedIn cid
-            reject c
-    else do void $ SR.send c $ S.Auth A.Welcome
-            DB.loginCharacter True cid
-            reg cid c
-            runReaderT play $ PlayerState cid
+admit reg dereg fw c cid = do
+  void $ SR.send c $ S.Auth A.Welcome
+  DB.loginCharacter True cid
+  reg cid c
+  runReaderT play $ PlayerState cid
   where
   play = resp Q.Join >> loop
   loop = do
