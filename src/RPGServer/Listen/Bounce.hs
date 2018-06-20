@@ -49,7 +49,7 @@ bounce reg dereg fw alreadyHere tOut nTries = do
 
 
 reject :: C.Client m a => a -> m ()
-reject c = SR.send c (S.Auth A.BadCredentials) >> C.closeServerQuit c
+reject = C.closeServerQuit
 
 
 admit :: (MonadIO m,
