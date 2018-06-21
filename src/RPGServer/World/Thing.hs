@@ -15,12 +15,14 @@ import Data.Aeson                    ( (.=),
                                        ToJSON(..) )
 import Data.Map                      ( lookup )
 import qualified RPGServer.Util.Text as T
-import RPGServer.World.Common        ( ID(..),
-                                       Name(..) )
+import RPGServer.World.Common        ( ID(..)
+                                     , Name(..)
+                                     , Desc(..) )
 
 type CharacterID = Int
 type ThingID     = Int
 type ThingName   = T.Text
+type ThingDesc   = T.Text
 
 
 class (ID a, Name a) => Thing a
@@ -31,7 +33,8 @@ class Thing a => Character a
 data ThingRec = ThingRec {
   isAwake   :: Maybe Bool,
   thingId   :: ThingID,
-  thingName :: ThingName
+  thingName :: ThingName,
+  thingDesc :: ThingDesc
 } deriving Show
 
 
@@ -44,11 +47,15 @@ instance ID ThingRec where
 instance Name ThingRec where
   name = thingName
 
+instance Desc ThingRec where
+  desc = thingDesc
+
 instance ToJSON ThingRec where
   toJSON t = object [
     "type"  .= ("thing" :: T.Text),
     "value" .= object ["id"    .= idn t,
                        "name"  .= name t,
+                       "description"  .= desc t,
                        "awake" .= isAwake t]]
 
 instance T.FromTextMap ThingRec where
@@ -58,6 +65,6 @@ instance T.FromTextMap ThingRec where
       Right (i, s) ->
         if not $ T.null s
         then Nothing
-        else ThingRec a i <$> lookup "name" tm where
+        else ThingRec a i <$> lookup "name" tm <*> lookup "description" tm where
           a = fmap (== "t") $ lookup "is_awake" tm
       _ -> Nothing
