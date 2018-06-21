@@ -68,23 +68,20 @@ instance (DB.PlayDB m,
 
   say fw s = maybe (return ()) bcast nonwhite where
     nonwhite = R.matchRegex (R.mkRegex "[^ ]") $ unpack s
-    bcast _  = do cid    <- lift getCID
+    bcast _  = do me     <- whoAmI
                   recips <- map W.idn <$> whoIsHere
-                  lift $ fw (M.Said cid s) recips
+                  lift $ fw (M.Said (W.name me) s) recips
 
-  join = joinOrQuit True
-
-  quit = joinOrQuit False
+  join fw = joinOrQuit fw =<< (M.Joined <$> whoAmI)
+  quit fw = joinOrQuit fw =<< (M.Disjoined <$> lift getCID)
 
 
 joinOrQuit :: (DB.PlayDB m, HasCID m, L.Log m L.Game)
               =>
-              Bool ->
               Forward m ->
+              M.Message ->
               D.D m M.Message
-joinOrQuit b fw = do
-  cid <- lift getCID
+joinOrQuit fw msg = do
   recips <- map W.idn <$> whoIsHere
-  let m = (if b then M.Joined else M.Disjoined) cid
-  lift $ fw m recips
-  return m
+  lift $ fw msg recips
+  return msg
