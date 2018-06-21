@@ -14,6 +14,7 @@ module RPGServer.Common ( module Data.Maybe,
                           catchJust,
                           handle,
                           handleJust,
+                          modifyIOError,
                           Exception(..),
                           SomeException,
                           forever,
@@ -66,6 +67,7 @@ import Control.Monad.Trans.Reader           ( ReaderT,
 import Data.List                            ( intercalate )
 import Data.Function                        ( on )
 import Data.Maybe
+import System.IO.Error                      ( modifyIOError )
 import System.IO                            ( hFlush,
                                               stdout )
 
