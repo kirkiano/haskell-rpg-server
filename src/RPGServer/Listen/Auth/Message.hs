@@ -9,6 +9,7 @@ module RPGServer.Listen.Auth.Message ( Credentials(..),
 import GHC.Generics
 import RPGServer.Util.Text
 import qualified Data.Aeson as J
+import RPGServer.World.Thing     ( CharacterID )
 
 
 type Username = Text
@@ -24,7 +25,7 @@ instance J.FromJSON Credentials
 
 ------------------------------------------------------------
 
-data Response = Welcome
+data Response = Welcome CharacterID
               | BadCredentials
               | AlreadyLoggedIn
               deriving (Generic, Show)

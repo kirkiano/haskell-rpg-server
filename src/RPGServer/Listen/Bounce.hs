@@ -65,7 +65,7 @@ admit :: (MonadIO m,
          CharacterID ->
          m ()
 admit reg dereg fw c cid = do
-  void $ SR.send c $ S.Auth A.Welcome
+  void $ SR.send c $ S.Auth $ A.Welcome cid
   DB.loginCharacter True cid
   reg cid c
   runReaderT play $ PlayerState cid
