@@ -151,7 +151,10 @@ session2CID s2CIDPort k = do
   let err    = ioError $ userError $ errMsg ++ show k
       errMsg = "Failed to obtain CharacterID for session key "
       parse cidS = return (read cidS :: Int) -- cid is int, should never blow up
-  N.connect "127.0.0.1" (show s2CIDPort) $ \(sock, _) -> do
-    N.send sock k
-    mCID <- N.recv sock 16 -- safety - far fewer than 16 digits are expected
-    maybe err (parse . bs2s) mCID
+      askServer = N.connect "127.0.0.1" (show s2CIDPort) $ \(sock, _) -> do
+        N.send sock k
+        mCID <- N.recv sock 16 -- safety - far fewer than 16 digits are expected
+        maybe err (parse . bs2s) mCID
+      betterError e = userError $ "Can't connect to session server: " ++ show e
+  modifyIOError betterError askServer
+
