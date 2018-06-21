@@ -10,17 +10,18 @@ import Data.Aeson                              ( (.=),
 import RPGServer.World                         ( PlaceRec,
                                                  PlaceName,
                                                  ThingID,
+                                                 ThingName,
                                                  ThingRec(..) )
 import RPGServer.DB.Error                      ( DBError )
 import qualified RPGServer.Listen.Auth.Message as A
 
 
 data Message = Auth A.Response
-             | Joined ThingID
+             | Joined ThingRec
              | YouAre ThingRec
              | Place PlaceRec
              | PlaceContents [ThingRec]
-             | Said ThingID Text
+             | Said ThingName Text
              | EnteredFrom ThingRec PlaceName
              | ExitedTo ThingID PlaceName
              | Error DBError
@@ -46,10 +47,10 @@ instance ToJSON Message where
     "type"  .= ("placecontents" :: Text),
     "value" .= contents]
 
-  toJSON (Said tid s) = object [
+  toJSON (Said tn s) = object [
     "type"  .= ("said" :: Text),
-    "value" .= object ["tid"    .= tid,
-                       "speech" .= s]]
+    "value" .= object ["speaker" .= tn,
+                       "speech"  .= s]]
 
   toJSON (EnteredFrom t p) = object [
     "type"  .= ("enteredfrom" :: Text),
@@ -65,9 +66,9 @@ instance ToJSON Message where
     "type"  .= ("error" :: Text),
     "value" .= e]
 
-  toJSON (Joined tid) = object [
+  toJSON (Joined t) = object [
     "type"  .= ("joined" :: Text),
-    "value" .= tid]
+    "value" .= t]
 
   toJSON (Disjoined tid) = object [
     "type"  .= ("disjoined" :: Text),
