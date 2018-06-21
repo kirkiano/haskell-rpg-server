@@ -90,8 +90,8 @@ instance MonadIO m => AdminDB (P m) where
 instance MonadIO m => PlayDB (P m) where
 
   getThing tid = pgQ sql (Only tid) >>= f where
-    sql   = "select name from world_thing where id = ?"
-    f [r] = return $ W.ThingRec Nothing tid $ fromOnly r
+    sql        = "select name, description from world_thing where id = ?"
+    f [(n, d)] = return $ W.ThingRec Nothing tid n d where
     f   _ = throwE $ InvalidThingID tid
 
   getLocation tid = pgQ sql (Only tid) >>= f where
@@ -121,19 +121,20 @@ instance MonadIO m => PlayDB (P m) where
     return $ W.PlaceRec pid pName pDesc exits
 
   getContents pid = pgQ sql (Only pid) >>= f where
-    sql = "select T.id, T.name \
+    sql = "select T.id, T.name, T.description \
          \ from world_located L \
          \ inner join world_thing T on T.id = L.thing_id \
          \ where L.place_id = ?"
-    f = return . (map $ uncurry $ W.ThingRec Nothing)
+    f = return . (map parse) where parse (i,n,d) = W.ThingRec Nothing i n d
 
   getOccupants pid = pgQ sql (Only pid) >>= f where
-    sql = "select C.thing_ptr_id, T.name, C.is_logged_in as is_awake \
+    sql = "select C.thing_ptr_id, T.name, \
+         \        T.description, C.is_logged_in as is_awake \
          \ from world_character C \
          \ inner join world_thing T on T.id = C.thing_ptr_id \
          \ inner join world_located L on L.thing_id = T.id \
          \ where L.place_id = ?"
-    f = return . (map $ \(i,n,a) -> W.ThingRec a i n)
+    f = return . (map $ \(i,n,d,a) -> W.ThingRec a i n d)
 
   setLocation tid pid = do
     let sql = "update world_located set place_id = ? where thing_id = ?"
