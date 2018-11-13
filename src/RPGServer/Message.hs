@@ -7,25 +7,21 @@ import Data.Text                               ( Text )
 import Data.Aeson                              ( (.=),
                                                  object,
                                                  ToJSON(..) )
-import RPGServer.World                         ( PlaceRec,
-                                                 PlaceName,
-                                                 ThingID,
-                                                 ThingName,
-                                                 ThingRec(..) )
 import RPGServer.DB.Error                      ( DBError )
+import qualified RPGServer.World               as W
 import qualified RPGServer.Listen.Auth.Message as A
 
 
 data Message = Auth A.Response
-             | Joined ThingRec
-             | YouAre ThingRec
-             | Place PlaceRec
-             | PlaceContents [ThingRec]
-             | Said ThingName Text
-             | EnteredFrom ThingRec PlaceName
-             | ExitedTo ThingID PlaceName
+             | Joined W.ThingRec
+             | YouAre W.ThingRec
+             | Place W.PlaceRec
+             | PlaceContents [W.ThingRec]
+             | Said W.ThingRec Text
+             | EnteredFrom W.ThingRec W.PlaceName
+             | ExitedTo    W.ThingRec W.PlaceName
              | Error DBError
-             | Disjoined ThingID
+             | Disjoined W.ThingRec
               deriving Show
 
 
@@ -47,9 +43,9 @@ instance ToJSON Message where
     "type"  .= ("placecontents" :: Text),
     "value" .= contents]
 
-  toJSON (Said tn s) = object [
+  toJSON (Said t s) = object [
     "type"  .= ("said" :: Text),
-    "value" .= object ["speaker" .= tn,
+    "value" .= object ["speaker" .= W.name t,
                        "speech"  .= s]]
 
   toJSON (EnteredFrom t p) = object [
@@ -57,9 +53,9 @@ instance ToJSON Message where
     "value" .= object ["thing" .= t,
                        "place" .= p]]
 
-  toJSON (ExitedTo tid p) = object [
+  toJSON (ExitedTo t p) = object [
     "type"  .= ("exitedto" :: Text),
-    "value" .= object ["tid"   .= tid,
+    "value" .= object ["thing" .= t,
                        "place" .= p]]
 
   toJSON (Error e) = object [

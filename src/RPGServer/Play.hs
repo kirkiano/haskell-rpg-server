@@ -59,8 +59,8 @@ instance (DB.PlayDB m,
           let (did, dname) = W.exitDestination e
           DB.setLocation (W.idn me) did
           newRecips <- map W.idn <$> whoIsHere
-          lift $ fw (M.ExitedTo    (W.idn me)      dname) oldRecips
-          lift $ fw (M.EnteredFrom        me  $ W.name p) newRecips
+          lift $ fw (M.ExitedTo    me       dname) oldRecips
+          lift $ fw (M.EnteredFrom me  $ W.name p) newRecips
     maybe err cont mExit
 
   whoIsHere = do cid <- lift getCID
@@ -70,10 +70,10 @@ instance (DB.PlayDB m,
     nonwhite = R.matchRegex (R.mkRegex "[^ ]") $ unpack s
     bcast _  = do me     <- whoAmI
                   recips <- map W.idn <$> whoIsHere
-                  lift $ fw (M.Said (W.name me) s) recips
+                  lift $ fw (M.Said me s) recips
 
   join fw = joinOrQuit fw =<< (M.Joined <$> whoAmI)
-  quit fw = joinOrQuit fw =<< (M.Disjoined <$> lift getCID)
+  quit fw = joinOrQuit fw =<< (M.Disjoined <$> whoAmI)
 
 
 joinOrQuit :: (DB.PlayDB m, HasCID m, L.Log m L.Game)
