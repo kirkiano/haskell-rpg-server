@@ -8,6 +8,7 @@ module RPGServer.DB.Class ( D,
                             PlayDB(..),
                             MakeDB(..) ) where
 
+import RPGServer.Util.Text
 import qualified RPGServer.World               as W
 import RPGServer.DB.Error                      ( D )
 import qualified RPGServer.Listen.Auth.Message as A
@@ -34,6 +35,7 @@ class Monad m => PlayDB m where
   getOccupants    :: W.PlaceID  ->                  D m [W.ThingRec]
   setLocation     :: W.ThingID  -> W.PlaceID     -> D m ()
   getContents     :: W.PlaceID  ->                  D m [W.ThingRec]
+  saveUtterance   :: W.ThingID  -> Text          -> D m ()
 {-
   setThing        :: W.ThingRec -> D m ()
 -}

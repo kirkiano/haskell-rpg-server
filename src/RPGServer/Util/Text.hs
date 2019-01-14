@@ -45,5 +45,9 @@ class ToText a where
   text :: a -> Text
 
 
+instance ToText String where
+  text = pack
+
+
 instance Show a => ToText a where
   text = pack . show

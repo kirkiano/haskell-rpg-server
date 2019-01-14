@@ -41,9 +41,10 @@ instance AuthDB m => AuthDB (PS m) where
 
 
 instance PlayDB m => PlayDB (PS m) where
-  getThing         = mapExceptT lift . getThing
-  getLocation      = mapExceptT lift . getLocation
-  getPlace         = mapExceptT lift . getPlace
-  getOccupants     = mapExceptT lift . getOccupants
-  getContents      = mapExceptT lift . getContents
-  setLocation tid  = mapExceptT lift . (setLocation tid)
+  getThing          = mapExceptT lift . getThing
+  getLocation       = mapExceptT lift . getLocation
+  getPlace          = mapExceptT lift . getPlace
+  getOccupants      = mapExceptT lift . getOccupants
+  getContents       = mapExceptT lift . getContents
+  setLocation tid   = mapExceptT lift . (setLocation tid)
+  saveUtterance tid = mapExceptT lift . (saveUtterance tid)
