@@ -110,12 +110,13 @@ instance AdminDB G where
 
 
 instance PlayDB G where
-  getThing         = mapExceptT (withReaderT dBase) . getThing
-  getLocation      = mapExceptT (withReaderT dBase) . getLocation
-  getPlace         = mapExceptT (withReaderT dBase) . getPlace
-  getOccupants     = mapExceptT (withReaderT dBase) . getOccupants
-  getContents      = mapExceptT (withReaderT dBase) . getContents
-  setLocation tid  = mapExceptT (withReaderT dBase) . (setLocation tid)
+  getThing          = mapExceptT (withReaderT dBase) . getThing
+  getLocation       = mapExceptT (withReaderT dBase) . getLocation
+  getPlace          = mapExceptT (withReaderT dBase) . getPlace
+  getOccupants      = mapExceptT (withReaderT dBase) . getOccupants
+  getContents       = mapExceptT (withReaderT dBase) . getContents
+  setLocation tid   = mapExceptT (withReaderT dBase) . (setLocation tid)
+  saveUtterance tid = mapExceptT (withReaderT dBase) . (saveUtterance tid)
 
 
 createEnv :: (MonadIO m,

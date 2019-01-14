@@ -55,12 +55,13 @@ instance AdminDB (ReaderT a L.L) => AdminDB (ReaderT (Pool a) L.L) where
 
 
 instance PlayDB (ReaderT a L.L) => PlayDB (ReaderT (Pool a) L.L) where
-  getThing            = liftIt . getThing
-  getLocation         = liftIt . getLocation
-  getPlace            = liftIt . getPlace
-  getOccupants        = liftIt . getOccupants
-  getContents         = liftIt . getContents
-  setLocation tid     = liftIt . (setLocation tid)
+  getThing          = liftIt . getThing
+  getLocation       = liftIt . getLocation
+  getPlace          = liftIt . getPlace
+  getOccupants      = liftIt . getOccupants
+  getContents       = liftIt . getContents
+  setLocation tid   = liftIt . (setLocation tid)
+  saveUtterance tid = liftIt . (saveUtterance tid)
 {- setThing t          = withResource p (\d -> setThing d t) -}
 
 ------------------------------------------------------------

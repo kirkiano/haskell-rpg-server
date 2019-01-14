@@ -68,7 +68,10 @@ instance (DB.PlayDB m,
 
   say fw s = maybe (return ()) bcast nonwhite where
     nonwhite = R.matchRegex (R.mkRegex "[^ ]") $ unpack s
-    bcast _  = do me     <- whoAmI
+    -- TODO: make atomic
+    bcast _  = do cid <- lift getCID
+                  DB.saveUtterance cid $ text s
+                  me     <- whoAmI
                   recips <- map W.idn <$> whoIsHere
                   lift $ fw (M.Said me s) recips
 

@@ -77,11 +77,12 @@ instance (Monad m,
     where
     goSlow _ = asks _db >>= \db -> lift $ runReaderT (runExceptT $ getThing tid) db
 
-  getLocation     = mapExceptT (withReaderT _db) . getLocation
-  getPlace        = mapExceptT (withReaderT _db) . getPlace
-  getContents     = mapExceptT (withReaderT _db) . getContents
-  getOccupants    = mapExceptT (withReaderT _db) . getOccupants
-  setLocation tid = mapExceptT (withReaderT _db) . (setLocation tid)
+  getLocation       = mapExceptT (withReaderT _db) . getLocation
+  getPlace          = mapExceptT (withReaderT _db) . getPlace
+  getContents       = mapExceptT (withReaderT _db) . getContents
+  getOccupants      = mapExceptT (withReaderT _db) . getOccupants
+  setLocation tid   = mapExceptT (withReaderT _db) . (setLocation tid)
+  saveUtterance tid = mapExceptT (withReaderT _db) . (saveUtterance tid)
 
 {-  
   setThing s t = do setThing (_db s) t

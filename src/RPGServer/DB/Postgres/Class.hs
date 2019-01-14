@@ -143,8 +143,15 @@ instance MonadIO m => PlayDB (P m) where
       then return ()
       else throwE $ InvalidPlaceID pid
 
+  saveUtterance tid speech = do
+    let sql = "insert into world_utterance \
+             \ (time_created, speaker_id, place_id, speech) \
+             \ select now(), ?, L.place_id, ? \
+             \ from world_located L \
+             \ where L.thing_id = ?"
+    void $ pgE sql (tid, speech, tid)
+
 {-
   setThing c t = void $ pgE c sql (name t, idn t) where
     sql = "update world_thing set name = ? where id = ?"
-
 -}
