@@ -2,3 +2,4 @@
 haskell-rpg-server.cabal
 *~
 .idea/
+*.iml
