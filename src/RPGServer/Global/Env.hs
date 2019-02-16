@@ -36,7 +36,8 @@ import qualified RPGServer.DB.Redis         as Redis
 
 type DBase = Pool (CachedDB PG.Conn Redis.Conn)
 
-data Env = Env { dBase :: DBase }
+data Env = Env { dBase   :: DBase,
+                 saveUtt :: Bool }
          deriving Show
 
 ------------------------------------------------------------
@@ -110,20 +111,23 @@ instance AdminDB G where
 
 
 instance PlayDB G where
-  getThing          = mapExceptT (withReaderT dBase) . getThing
-  getLocation       = mapExceptT (withReaderT dBase) . getLocation
-  getPlace          = mapExceptT (withReaderT dBase) . getPlace
-  getOccupants      = mapExceptT (withReaderT dBase) . getOccupants
-  getContents       = mapExceptT (withReaderT dBase) . getContents
-  setLocation tid   = mapExceptT (withReaderT dBase) . (setLocation tid)
-  saveUtterance tid = mapExceptT (withReaderT dBase) . (saveUtterance tid)
+  getThing            = mapExceptT (withReaderT dBase) . getThing
+  getLocation         = mapExceptT (withReaderT dBase) . getLocation
+  getPlace            = mapExceptT (withReaderT dBase) . getPlace
+  getOccupants        = mapExceptT (withReaderT dBase) . getOccupants
+  getContents         = mapExceptT (withReaderT dBase) . getContents
+  setLocation tid     = mapExceptT (withReaderT dBase) . (setLocation tid)
+  saveUtterance tid s = do
+    save <- lift $ asks saveUtt
+    when save $ mapExceptT (withReaderT dBase) (saveUtterance tid s)
 
 
 createEnv :: (MonadIO m,
               MakeDB m DBase (PoolParams (PG.ConnectInfo, Redis.ConnectInfo)),
               L.Log m L.Main) =>
              ReaderT S.Settings m Env
-createEnv = Env <$> connDB where
+createEnv = Env <$> connDB <*> saveUtt where
+    saveUtt = asks S.saveUtterances
     connDB  = do nstr <- asks S.dbPoolNStripes
                  nper <- asks S.dbPoolNPerStripe
                  idle <- asks S.dbPoolMaxIdleTime

@@ -36,7 +36,9 @@ data Settings = Settings {
 
   dbPoolNStripes    :: Int,
   dbPoolNPerStripe  :: Int,
-  dbPoolMaxIdleTime :: NominalDiffTime -- in seconds
+  dbPoolMaxIdleTime :: NominalDiffTime, -- in seconds
+
+  saveUtterances    :: Bool
   }
 
 
@@ -52,7 +54,8 @@ instance Show Settings where
     ("redis settings",                    show $ redisSettings s),
     ("number of db pool stripes",         show $ dbPoolNStripes s),
     ("number of db resources per stripe", show $ dbPoolNPerStripe s),
-    ("max idle time for db resource",     show $ dbPoolMaxIdleTime s)
+    ("max idle time for db resource",     show $ dbPoolMaxIdleTime s),
+    ("save utterances to db",             show $ saveUtterances s)
     ]
     where f (k, v) = k ++ ": " ++ v
 
@@ -60,7 +63,8 @@ instance Show Settings where
 
 data Subsettings = Subsettings {
   debug       :: Bool,
-  _tcpPort    :: Int
+  _tcpPort    :: Int,
+  _saveUtt    :: Bool
 }
 
 
@@ -77,6 +81,13 @@ getSubsettings = Subsettings
                    <> O.value 11237
                    <> O.showDefault
                    <> O.metavar "INT" )
+                 <*> O.switch
+                 ( O.long "save_utterances"
+                   <> O.short 'u'
+                   <> O.help "save utterances to DB?"
+                   -- <> O.value False
+                   -- <> O.showDefault
+                 )
 
 
 getSettings :: IO Settings
@@ -103,7 +114,9 @@ ss2s s = return $ Settings {
 
   dbPoolNStripes    = 1,
   dbPoolNPerStripe  = 20,
-  dbPoolMaxIdleTime = 10
+  dbPoolMaxIdleTime = 10,
+
+  saveUtterances    = _saveUtt s
 }
   where pg    = PG.ConnectInfo "localhost" 5432 "rpg" "" "rpg"
         redis = Redis.ConnInfo "localhost" (Redis.PortNumber 6379)
