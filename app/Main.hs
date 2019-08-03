@@ -6,6 +6,9 @@ module Main ( main ) where
 
 import RPGServer.Common
 import qualified Control.Concurrent         as C
+import Control.Concurrent.STM               ( atomically )
+import Control.Concurrent.STM.TQueue        ( newTQueue,
+                                              writeTQueue )
 import System.IO                            ( stdout )
 import qualified System.Posix.Signals       as P
 import qualified SendReceive                as SR
@@ -16,6 +19,7 @@ import qualified RPGServer.Listen.Websocket as WS
 import qualified RPGServer.Listen.Socket    as S
 import RPGServer.Listen.Bounce              ( admit
                                             , bounce )
+import RPGServer.GameLoop                   ( gameLoop )
 
 
 data TopEnv = TopEnv {
@@ -43,6 +47,7 @@ main = G.getSettings >>= go where
       e     <- runReaderT (runReaderT G.createEnv s) lh
       f     <- G.runG e lh G.createForwarderTWM -- :: IO (G.F G.G)
       fwtch <- G.runG e lh $ G.forkForwarderWatcher f 5000000
+      masterQueue <- atomically newTQueue
       let sndfw     = void . (F.sendFwdTWM f Nothing) -- ignore response
           fw m      = sndfw . (F.Forward m)
           dereg :: CharacterID -> G.G ()
@@ -53,13 +58,15 @@ main = G.getSettings >>= go where
           sPort     = G.tcpPort s
           wPort     = G.websockPort s
           ssPort    = G.sessionServerPort s
-          slst      = S.listen  sPort $ bounce reg dereg fw tOut tries
+          sendToGameLoop = liftIO . atomically . (\q -> writeTQueue masterQueue q >> return True)
+          slst      = S.listen  sPort $ bounce reg dereg sendToGameLoop tOut tries
           wlst      = WS.listen ssPort wPort
-                      (\c cid -> admit reg dereg fw c cid)
+                      (\c cid -> admit reg dereg sendToGameLoop c cid)
           frk       = C.forkIO . (G.runG e lh)
-      sltid <- frk slst
-      wltid <- frk wlst
-      return $ TopEnv e f fwtch wltid sltid
+      _         <- frk $ gameLoop masterQueue fw
+      slTID     <- frk slst
+      wlTID     <- frk wlst
+      return $ TopEnv e f fwtch wlTID slTID
 
 
 queryUser :: TopEnv -> IO ()

@@ -7,23 +7,22 @@
              FlexibleContexts,
              FlexibleInstances #-}
 
-module RPGServer.DB.Pool ( Pool,
-                           PoolParams(..) ) where
-
+module RPGServer.DB.Pool ( {- Pool,
+                           PoolParams(..) -} ) where
+{-
 import RPGServer.Common
-import Prelude hiding        ( getContents )
-import Data.Time.Clock       ( NominalDiffTime )
-import Data.Pool             ( Pool,
-                               createPool,
-                               destroyAllResources,
-                               withResource )
+import Prelude hiding           ( getContents )
+import Data.Time.Clock          ( NominalDiffTime )
+import Data.Pool                ( Pool,
+                                  createPool,
+                                  destroyAllResources,
+                                  withResource )
 import qualified RPGServer.Log  as L
-import RPGServer.DB.Error    ( D )
-import RPGServer.DB.Class    ( AuthDB(..),
-                               AdminDB(..),
-                               PlayDB(..),
-                               MakeDB(..) )
-
+import RPGServer.Listen.Auth    ( Auth(..) )
+import RPGServer.DB.Error       ( D )
+import RPGServer.DB.Class       ( AdminDB(..),
+                                  PlayDB(..),
+                                  MakeDB(..) )
 
 data PoolParams a = PoolParams {
   nStripes          :: Int,
@@ -45,9 +44,8 @@ instance MakeDB L.L a r => MakeDB L.L (Pool a) (PoolParams r) where
 
 ------------------------------------------------------------
 
-instance AuthDB (ReaderT a L.L) => AuthDB (ReaderT (Pool a) L.L) where
-  authUser uname      = liftSome . (authUser uname)
-  loginCharacter b    = liftSome . (loginCharacter b)
+instance Auth (ReaderT a L.L) => Auth (ReaderT (Pool a) L.L) where
+  authUser            = liftSome . authUser
 
 
 instance AdminDB (ReaderT a L.L) => AdminDB (ReaderT (Pool a) L.L) where
@@ -55,14 +53,19 @@ instance AdminDB (ReaderT a L.L) => AdminDB (ReaderT (Pool a) L.L) where
 
 
 instance PlayDB (ReaderT a L.L) => PlayDB (ReaderT (Pool a) L.L) where
-  getThing          = liftIt . getThing
-  getLocation       = liftIt . getLocation
-  getPlace          = liftIt . getPlace
-  getOccupants      = liftIt . getOccupants
-  getContents       = liftIt . getContents
-  setLocation tid   = liftIt . (setLocation tid)
-  saveUtterance tid = liftIt . (saveUtterance tid)
-{- setThing t          = withResource p (\d -> setThing d t) -}
+  loginCharacter b    = liftIt . (loginCharacter b)
+  getThing            = liftIt . getThing
+  getThingDescription = liftIt . getThingDescription
+  getTHandle          = liftIt . getTHandle
+  getCoPlace          = liftIt . getCoPlace
+  getCoExits          = liftIt . getCoExits
+  getAddress          = liftIt . getAddress
+  getCoOccupantIDs    = liftIt . getCoOccupantIDs
+  getCoContentHandles = liftIt . getCoContentHandles
+
+  setLocation pid                = liftIt . (setLocation pid)
+  setUtterance tid               = liftIt . (setUtterance tid)
+  updateThing                    = liftIt . updateThing
 
 ------------------------------------------------------------
 
@@ -83,3 +86,4 @@ liftSome x = do
   p  <- ask
   lh <- lift ask
   liftIO $ withResource p (\d -> runReaderT (runReaderT x d) lh)
+-}

@@ -1,0 +1,25 @@
+{\em \small Note: this project aims more to add features than to maximize
+test coverage.}
+
+\bigskip
+
+This repository contains the core engine for a multiplayer role-playing game
+(RPG).
+Its chief purpose is to simulating the mechanics of the game world, including,
+eventually, a kind of mechanics of human (and possibly animal) psychology.
+It does not determine what characters populate the world or what their goals
+may be.
+That is up to the players who connect to this engine (see below).
+
+The game is networked and accepts connections by TCP and by websocket.
+When this aspect of it is of particular interest, the engine will sometimes be
+referred to as ``the server.''
+When on the other hand the emphasis is on its function as game loop (see below),
+it will typically be referred to as ``the engine.''
+
+A Django backend resides in a separate repository.
+It authenticates users, manages the underlying database, and provides a couple
+of REST endpoints.
+The frontend, residing in a third repository, is implemented in Angular.
+It~connects to the Django app via HTTP and to the server via websocket.
+There is no plan to create a frontend app for the Android or iOS platforms.

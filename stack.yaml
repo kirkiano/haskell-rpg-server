@@ -48,6 +48,7 @@ extra-deps:
 - containers-0.5.10.2
 - cookie-0.4.4
 - cryptonite-0.24
+- directory-1.3.0.2
 - either-4.5
 - filepath-1.4.1.2
 - monad-control-1.0.2.2
@@ -59,23 +60,24 @@ extra-deps:
 - process-1.6.1.0
 - regex-compat-0.95.1
 - resource-pool-0.2.3.2
+- stm-2.4.4.1
 - text-1.2.2.2
 - time-1.7.0.1
 - unix-2.7.2.2
 - utf8-string-1.0.1.1
 - websockets-0.12.2.0
 - Workflow-0.8.3
-- git: git@github.com:kirkiano/haskell-loggit.git
+- git: git@github.com-kirkiano:kirkiano/haskell-loggit.git
   commit: 6f49d9930747549657c931095aaa9e94786dc50f
-- git: git@github.com:kirkiano/haskell-misc-utils.git
+- git: git@github.com-kirkiano:kirkiano/haskell-misc-utils.git
   commit: 164b0e2e1249a2a3ce14122e21c1694977f383ba
-- git: git@github.com:kirkiano/haskell-bouncer.git
+- git: git@github.com-kirkiano:kirkiano/haskell-bouncer.git
   commit: cfce43e0c40030c3ea1906089ec8a6b14bb4c53c
-- git: git@github.com:kirkiano/haskell-send-receive.git
+- git: git@github.com-kirkiano:kirkiano/haskell-send-receive.git
   commit: 16e6decbf2d3dd390d03546db1cb4b3aad865282
-- git: git@github.com:kirkiano/haskell-thread-mailbox.git
+- git: git@github.com-kirkiano:kirkiano/haskell-thread-mailbox.git
   commit: 51aaec70a82af1b3e3849e401bc665df750b6bad
-- git: git@github.com:kirkiano/haskell-forwarder.git
+- git: git@github.com-kirkiano:kirkiano/haskell-forwarder.git
   commit: 433e6711293b3774f85b4600e8f3cb31008233ac
 # Override default flag values for local packages and extra-deps
 # flags: {}

@@ -1,0 +1,71 @@
+The engine should be extended to open a TCP port that allows authorized backend
+components to connect and {\em drive} the game, by spawning NPCs and endowing
+them with goals and behaviors.
+Because such a driving module would manage many NPCs and
+would multiplex the communication between them
+and the engine, it would put its single TCP connection to better use than a
+bot does.
+
+The NPCs of such a module should react only
+{\em via} the game engine.
+If, for example, the game engine allows characters to
+punch each other, and if a module decides to make one of its NPCs
+punch another, the module must not try to simulate the punch internally.
+Rather, it must send the game engine a request representing the punch, and
+cannot conclude that the punch happened until it receives confirmation from the
+game engine, in the form of a server message.
+
+The connection between module and engine should carry JSON for now.
+If and when
+it becomes a bottleneck, an alternative TCP port can be opened for the same
+purpose but communicating in raw binary.
+But if the communication is dominated
+by strings of text then this will not bring a big improvement, because in
+strings there is already a one-to-one (or thereabouts) correspondence between
+character and byte.
+
+Driving modules can augment the game with elements and NPCs of any kind.
+A module might supply the game with "sleep-sweepers," NPCs that
+roam the world and return any sleeping character (derelict player) to its
+home, so as not to "litter" the world with unresponsive characters.
+But first
+the (already partially implemented) asleep/awake functionality would have to
+be completed.
+
+Also possible is a driving module that provides driving---literally.
+It could
+fill the world with taxis that can be summoned and that take characters to
+different places.
+First, though, the game engine would need to be extended to
+give a thing (a taxi) the ability to contain or carry another thing or player.
+For the sake of realism, the ability to teleport is not planned.
+
+These are only two possibilities.
+More interesting ones are mentioned in the section on game play below.
+
+Since the interface between a driving module and the game engine is just JSON
+(or raw binary), the module can be implemented in any language, so there is
+an opportunity here for polyglottism.
+And since
+\footlink{actors}{https://en.wikipedia.org/wiki/Actor\_model} can be used to
+model NPCs, a driving module might be nicely implemented in Erlang, Actix,
+or Akka, though Akka is apparently
+\footlink{quite slow}{http://www.techempower.com/benchmarks/}.
+
+A driving module can extend the capabilities of the game without necessarily
+populating it with NPCs. For example a module can be added that provides
+directions from any place in the game world to any other. It might construct
+a graph of the world directly from the database (\ie, without going through
+the game engine), and upon request it would run
+a shortest-path algorithm between any two nodes (places), sending
+the requested path back via the game engine as a JSON array.
+But actually
+this functionality might be better implemented as side-channel REST, provided
+say by the Django server.
+
+Driving modules should typically be dynamically tunable.
+For example, one that fills the game with police agents should allow the game
+administrator to adjust the density of such agents in the game world, while
+the game is running.
+The module can do this by exposing to the game
+administrator a small REST API\@.

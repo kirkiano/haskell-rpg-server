@@ -1,2 +1,0 @@
-stack clean
-stack build

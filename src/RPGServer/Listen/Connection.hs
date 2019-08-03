@@ -4,8 +4,7 @@
              FlexibleInstances,
              FlexibleContexts #-}
 
-module RPGServer.Listen.Connection ( Connection(..),
-                                     Client ) where
+module RPGServer.Listen.Connection ( Connection(..), Client ) where
 
 import qualified Data.Time                    as T
 import qualified SendReceive                  as SR
@@ -40,7 +39,6 @@ class (Show a,
        Connection m a,
        SR.Sender a m Message,
        SR.WaitingReceiver a m Request) => Client m a
-
 
 ------------------------------------------------------------
 {-

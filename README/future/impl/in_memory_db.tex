@@ -1,0 +1,34 @@
+As a matter of interest we can ask whether persistence can be made even faster.
+Apparently, in addition to making transactions fast, Redis also makes them
+durable, by keeping a transaction log on disk, writing to it on every update of
+in-memory data, and making the write operation an append.
+Since the I/O entailed in appends is sequential, there is no seek delay,
+making the updates fast.
+Details can be found
+\footlink{here}{https://medium.com/@denisanikin/what-an-in-memory-database-is-and-how-it-persists-data-efficiently-f43868cff4c1}.
+(A \footlink{companion article}{https://medium.com/@denisanikin/asynchronous-processing-with-in-memory-databases-or-how-to-handle-one-million-transactions-per-36a4c01fc4e4}
+raves about the speeds attainable with Redis.
+But another online post, which I now cannot find, measured the just-described
+``embedded'' approach as being orders of magnitude faster than Redis.)
+
+The game engine could do the same.
+That is, after successfully servicing a request,
+the game loop could immediately write it to the end of a transaction
+log file on disk.
+If and when the size of this log file becomes unwieldy,
+it can be wiped clean, and the in-memory structure representing the current
+state of the game can be saved to disk instead.
+From this fresh checkpoint the transaction log, having just been truncated,
+could then build up again.
+And the cycle would continue.
+
+But this trick would seem not to work as well if the hard drive were being
+shared with other processes performing I/O. Moreover it would mean the
+abandoning of the relational model, at least near the game engine, and hence
+the loss of a clean data model which could also be used by ancillary apps.
+So it is hoped that the needs of speed will not require this drastic change.
+According to
+\footlink{Postgres' documentation}{https://www.postgresql.org/docs/9.1/explicit-locking.html},
+``An exclusive row-level lock on a specific row is automatically acquired when
+the row is updated or deleted.'' This of course increases the throughput of
+transactions, and we hope it will make them plenty fast.

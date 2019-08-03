@@ -18,9 +18,11 @@ module RPGServer.Common ( module Data.Maybe,
                           Exception(..),
                           SomeException,
                           forever,
+                          forM,
                           void,
                           when,
                           MonadIO,
+                          MonadTrans,
                           liftIO,
                           lift,
                           ExceptT(..),
@@ -39,6 +41,7 @@ module RPGServer.Common ( module Data.Maybe,
 
 import Prelude hiding                       ( log )
 import Control.Monad                        ( forever,
+                                              forM,
                                               void,
                                               when )
 import Control.Exception                    ( bracket,
@@ -53,7 +56,8 @@ import Control.Exception                    ( bracket,
 import Control.Monad.IO.Class               ( MonadIO,
                                               liftIO )
 import Control.Concurrent.MonadIO.Utils     ()
-import Control.Monad.Trans.Class            ( lift )
+import Control.Monad.Trans.Class            ( MonadTrans,
+                                              lift )
 import Control.Monad.Trans.Except           ( ExceptT(..),
                                               mapExceptT,
                                               runExceptT,

@@ -1,0 +1,128 @@
+\subsubsection{Nonverbal gestures}
+\label{sec:future:rules:nonverbal}
+
+The looks that a character can currently give another are neutral.
+Game mechanics should include a host of others that are pregnant with meaning:
+smiles, frowns, smirks, glowers, looks of shock, pity, joy,
+curiosity, confusion, upset,
+\etc\@ As in real life, characters should give each other neutral looks
+randomly and at some low frequency.
+
+Similarly there should be gestures of the body, and the game should report
+(as events) whether a character's body language is not neutral or natural, \eg,
+whether it is stiff with pretense, or slumped with fear, or erect with contempt.
+
+\subsubsection{Health, physical and psychological}
+
+As in many other games, each character should have its own measure of health.
+But this should be broken down by type, giving a measure of heart rate,
+blood pressure, rate of breath, \etc
+
+More interestingly, each character should have a set of {\em feelings}:
+fear, happiness, anger, pride, humiliation, \etc, each with its own scale.
+As in real life, emotions and biological reactions should happen {\em to} a
+character, whether he or she wills it or not, so various looks and
+gestures (\S\ref{sec:future:rules:nonverbal}) should trigger the consequent
+psychological effects, positive and negative.
+That is, they should influence the receiver's feelings.
+For example, friendly looks and gestures (if they are sincere) should increase
+a character's psychic well-being.
+Similarly, the wrong kind of look can have bad effects: they can provoke
+hysterical fear in some primates, and combat in geese.
+These dynamics should be part of the game's mechanics regardless
+of characters' higher-level gameplay(s).
+
+Conversely, if certain emotions become too intense, they should make a
+character react in certain ways.
+If enough physical or psychological torment is inflicted on it, then the
+humiliation should eventually push its level of rage beyond the limit of
+self-control, and it should act out in some way, perhaps with physical or
+emotional violence, eg, a slap or a scream.
+It will be interesting to see the effect of such surprises on live players.
+On NPCs they should provoke further reactions,
+positive or negative depending on the particular gameplay.
+In this way the mechanics of the game should give rise to feedback loops.
+
+These two classes of measure---the physical and the psychological---should
+affect one another.
+For example one has heard of people, and animals, dying of grief, and even
+of joy.
+And stress is generally thought to raise the likelihood of heart attack.
+Reactions should be tuned so that they do not lead to chains that ``explode''
+too quickly.
+
+Comments on the implementation of these features are given in
+\S\ref{sec:future:impl:psycho}.
+
+\subsubsection{Gossip}
+
+To mimic the less savory aspects of real life, characters should be able to
+whisper defamatory gossip about one another.
+And as in real life, unfortunately, once character A hears gossip about
+character B, A should not try to verify the claims, but rather should change
+its nonverbal behavior toward B\@, giving it looks and gestures that
+reflect the bad-mouthing (\S\ref{sec:future:rules:nonverbal}).
+This change in attitude should be permanent, and once a character hears gossip
+about another, it should spread it to others, depending on its severity.
+
+For implementation details see \S\ref{sec:future:impl:gossip}.
+
+\subsubsection{Property and privacy}
+
+When a character disconnects from the server, the engine should automatically
+put it back in its home place while it remains offline.
+
+A permission system should be established, allowing characters to own
+property and to forbid others from entering.
+In this way a character's home can be made a refuge from whatever wars,
+physical or psychological, or going on outside.
+
+\subsubsection{Messaging}
+
+The game should have a mechanism that allows a character to send a message,
+such as a letter, to another one.
+When character A receives a message in the presence of character B
+(\ie, if they are both in the same place at that time), the game
+should inform B of~it, even if the message does not regard~B\@.
+
+\subsubsection{Weapons}
+
+Elements of more traditional warfare can be introduced in the form of guns,
+\etc\@
+A character would be able to acquire a gun and shoot at a target, including
+an enemy character.
+But whether the shot hits is determined by the character's skill.
+The game could require characters to practice at firing
+ranges, as a condition for improving the accuracy of their aim.
+To mimic real life, when it comes time to fire at an actual enemy target later
+on, a probability, computed as a function of the extent of past practice, would
+determine whether the shot is successful.
+
+\subsubsection{View port}
+
+The simulation of firing ranges raises the question of whether the central
+component of the game app should be a graphical view port, rather than a
+chat stream, as is currently the case in the Angular frontend.
+The game is committed to written language as the medium of communication,
+especially as high-resolution animated graphics, even if quickly
+rendered, can sometimes amount to bells and whistles that distract from the
+essence of the game.
+But here and there it might be nice to have an image to look at, if only one
+that depicts the current location.
+
+\subsubsection{Economics}
+
+The game engine can incorporate a monetary system and an economy in which
+characters trade various goods and services as they try to eke out
+an existence.
+Driving modules can be added representing various professions;
+journalism and policing have already been mentioned.
+Agriculture is another possibility: fields for planting can be added,
+and a driving module can fill them with farmers.
+The game engine may require characters to eat some kind of food if they are
+to maintain their health.
+
+And a character can be required to earn a living, using the wages to
+purchase various necessities, including food and weapons.
+The ability to do this comfortably can be impaired as part of an enemy's attack
+on the character, for example by harming the character's reputation.

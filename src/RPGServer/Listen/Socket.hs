@@ -169,7 +169,8 @@ clskt s = do
   liftIO $ S.close s
 
 
-
+-- currently unused, but still export it, to silence the
+-- compiler's warning
 getMyIPAddr :: IO S.HostName
 getMyIPAddr = do
   let hints = S.defaultHints { S.addrFlags = [S.AI_NUMERICHOST,

@@ -14,9 +14,9 @@ import RPGServer.Common
 import System.Log
 import System.IO                      ( Handle )
 import RPGServer.Util.ByteString
-import qualified RPGServer.Message    as M
-import qualified RPGServer.Request    as R
-import RPGServer.Listen.Auth.Message  ( Username )
+import RPGServer.Request              ( Request )
+import RPGServer.Event                ( Event )
+import RPGServer.Listen.Auth          ( Username )
 import RPGServer.World.Thing          ( CharacterID )
 
 
@@ -28,10 +28,6 @@ data Main = StartingForwarder
           | StoppingForwarder
           | StartingForwarderWatcher
           | StoppingForwarderWatcher
-          | AttemptingToConnectToRedis
-          | CannotConnectToRedis String
-          | ConnectedToRedis
-          | DisconnectedFromRedis
           | AttemptingToConnectToPostgres
           | CannotConnectToPostgres String
           | ConnectedToPostgres
@@ -63,15 +59,13 @@ data Transmission = SentToHost ConnectionType ByteString
 
 
 data Auth = WaitingForCredentialsFrom String
-          | AuthDBSucceeded Username
-          | AuthDBFailed Username
-          | AuthLDAPSucceeded Username
-          | AuthLDAPFailed Username
+          | AuthSucceeded Username
+          | AuthFailed Username
           | UserAlreadyLoggedIn CharacterID
           deriving Show
 
 
-data Game = Game R.Request (Maybe M.Message)
+data Game = Game Request (Maybe Event)
           deriving Show
 
 

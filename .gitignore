@@ -1,5 +1,11 @@
 .stack-work/
-haskell-rpg-server.cabal
+rpg-server-engine.cabal
 *~
 .idea/
 *.iml
+
+# LaTeX
+*.log
+*.aux
+*.toc
+*.out

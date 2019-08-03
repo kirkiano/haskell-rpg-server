@@ -1,0 +1,9 @@
+* Make Thing descriptions optional.
+* Allow multiple connections by same user?
+* Consider stamping every server message with a datetime.
+* Consider offloading all authentication matters to Bouncer, including the
+  sending of 'Send Credentials' and 'Bad Credentials' type messages.
+* Get rid of Conn.hs.
+* Clean up Connection.hs.
+* Implement one of the driver modules in Prolog.
+* Look into use of mzero for (Nothing, []) in gameloop / respond.

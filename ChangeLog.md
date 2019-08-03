@@ -1,3 +1,3 @@
-# Changelog for haskell-rpg-server
+# Changelog for rpg-server-engine
 
 ## Unreleased changes

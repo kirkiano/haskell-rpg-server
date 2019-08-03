@@ -18,7 +18,6 @@ import Data.Semigroup                       ((<>))
 import qualified System.Log                 as L
 import qualified Bouncer                    as B
 import qualified Database.PostgreSQL.Simple as PG
-import qualified Database.Redis             as Redis
 
 
 data Settings = Settings {
@@ -27,19 +26,13 @@ data Settings = Settings {
   tcpPort           :: Int,
   websockPort       :: Int,
   sessionServerPort :: Int,
-  
   connTries         :: B.NumTriesLeft, -- max allowed number of login attempts
   connTimeout       :: NominalDiffTime,
   
   pgSettings        :: PG.ConnectInfo,
-  redisSettings     :: Redis.ConnectInfo,
-
-  dbPoolNStripes    :: Int,
-  dbPoolNPerStripe  :: Int,
-  dbPoolMaxIdleTime :: NominalDiffTime, -- in seconds
 
   saveUtterances    :: Bool
-  }
+}
 
 
 instance Show Settings where
@@ -51,10 +44,6 @@ instance Show Settings where
     ("max login attempts per connection", show $ connTries s),
     ("max time to login (seconds)",       show $ connTimeout s),
     ("postgres settings",                 show $ pgSettings s),
-    ("redis settings",                    show $ redisSettings s),
-    ("number of db pool stripes",         show $ dbPoolNStripes s),
-    ("number of db resources per stripe", show $ dbPoolNPerStripe s),
-    ("max idle time for db resource",     show $ dbPoolMaxIdleTime s),
     ("save utterances to db",             show $ saveUtterances s)
     ]
     where f (k, v) = k ++ ": " ++ v
@@ -110,17 +99,10 @@ ss2s s = return $ Settings {
   connTimeout       = 300,
                  
   pgSettings        = pg,
-  redisSettings     = redis,
-
-  dbPoolNStripes    = 1,
-  dbPoolNPerStripe  = 20,
-  dbPoolMaxIdleTime = 10,
 
   saveUtterances    = _saveUtt s
 }
-  where pg    = PG.ConnectInfo "localhost" 5432 "rpg" "" "rpg"
-        redis = Redis.ConnInfo "localhost" (Redis.PortNumber 6379)
-                Nothing 1 1 60 Nothing
+  where pg = PG.ConnectInfo "localhost" 5432 "rpg" "" "rpg"
 
 ------------------------------------------------------------
 

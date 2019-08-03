@@ -14,7 +14,7 @@ module RPGServer.DB.Postgres.Common ( P,
 
 import RPGServer.Common
 import Data.Time                         ( UTCTime )
-import Database.PostgreSQL.Simple as PG  ( Connection,
+import Database.PostgreSQL.Simple        ( Connection,
                                            ConnectInfo(..),
                                            execute,
                                            FromRow,
@@ -24,10 +24,14 @@ import Database.PostgreSQL.Simple as PG  ( Connection,
 import RPGServer.DB.Error                ( D )
 
 
+instance Show Connection where
+  show = const "Postgres DB"
+
+
 data Conn = Conn {
   _ctime :: UTCTime,
   _db    :: Connection
-}
+} deriving Show
 
 
 type P m = ReaderT Conn m

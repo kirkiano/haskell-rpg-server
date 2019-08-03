@@ -8,17 +8,23 @@ module RPGServer.Util.Text ( Text,
                              ReadTextMaybe(..),
                              bassc2tmap,
                              empty,
+                             intercalate,
+                             length,
                              null,
                              pack,
+                             strip,
                              unpack,
                              decimal,
                              decodeUtf8,
                              encodeUtf8 ) where
 
-import Prelude hiding            ( null )
+import Prelude hiding            ( null, length )
 import Data.Text                 ( Text,
                                    empty,
+                                   intercalate,
+                                   length,
                                    pack,
+                                   strip,
                                    unpack,
                                    null )
 import qualified Data.Map        as M
@@ -43,10 +49,6 @@ class ReadTextMaybe a where
 
 class ToText a where
   text :: a -> Text
-
-
-instance ToText String where
-  text = pack
 
 
 instance Show a => ToText a where

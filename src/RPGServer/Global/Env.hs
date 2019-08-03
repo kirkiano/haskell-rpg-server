@@ -23,18 +23,14 @@ import qualified RPGServer.Log              as L
 import qualified RPGServer.Global.Settings  as S
 import RPGServer.World                      ( CharacterID )
 import RPGServer.Message                    ( Message )
-import RPGServer.DB.Class                   ( AuthDB(..),
-                                              AdminDB(..),
+import RPGServer.Listen.Auth                ( Auth(..) )
+import RPGServer.DB.Class                   ( AdminDB(..),
                                               PlayDB(..),
                                               MakeDB(..) )
-import RPGServer.DB.Caching                 ( CachedDB(..) )
-import RPGServer.DB.Pool                    ( Pool,
-                                              PoolParams(..) )
 import qualified RPGServer.DB.Postgres      as PG
-import qualified RPGServer.DB.Redis         as Redis
 
 
-type DBase = Pool (CachedDB PG.Conn Redis.Conn)
+type DBase = PG.Conn
 
 data Env = Env { dBase   :: DBase,
                  saveUtt :: Bool }
@@ -101,43 +97,34 @@ instance L.Log G (FL.ForwardLog CharacterID m Message) where
 
 ------------------------------------------------------------
 
-instance AuthDB G where
-  authUser u       = withReaderT dBase . (authUser u)
-  loginCharacter b = withReaderT dBase . (loginCharacter b)
-
+instance Auth G where
+  authUser            = withReaderT dBase . authUser
 
 instance AdminDB G where
-  markLoggedInSet = mapExceptT (withReaderT dBase) . markLoggedInSet
+  markLoggedInSet     = mapExceptT (withReaderT dBase) . markLoggedInSet
 
 
 instance PlayDB G where
+  loginCharacter b    = mapExceptT (withReaderT dBase) . (loginCharacter b)
   getThing            = mapExceptT (withReaderT dBase) . getThing
-  getLocation         = mapExceptT (withReaderT dBase) . getLocation
-  getPlace            = mapExceptT (withReaderT dBase) . getPlace
-  getOccupants        = mapExceptT (withReaderT dBase) . getOccupants
-  getContents         = mapExceptT (withReaderT dBase) . getContents
-  setLocation tid     = mapExceptT (withReaderT dBase) . (setLocation tid)
-  saveUtterance tid s = do
+  getThingDescription = mapExceptT (withReaderT dBase) . getThingDescription
+  getTHandle          = mapExceptT (withReaderT dBase) . getTHandle
+  getAddress          = mapExceptT (withReaderT dBase) . getAddress
+  getCoPlace          = mapExceptT (withReaderT dBase) . getCoPlace
+  getCoExits          = mapExceptT (withReaderT dBase) . getCoExits
+  getCoOccupantIDs    = mapExceptT (withReaderT dBase) . getCoOccupantIDs
+  getCoContentHandles = mapExceptT (withReaderT dBase) . getCoContentHandles
+  setLocation pid     = mapExceptT (withReaderT dBase) . (setLocation pid)
+  updateThing         = mapExceptT (withReaderT dBase) . updateThing
+  setUtterance tid s  = do
     save <- lift $ asks saveUtt
-    when save $ mapExceptT (withReaderT dBase) (saveUtterance tid s)
+    when save $ mapExceptT (withReaderT dBase) (setUtterance tid s)
 
 
-createEnv :: (MonadIO m,
-              MakeDB m DBase (PoolParams (PG.ConnectInfo, Redis.ConnectInfo)),
-              L.Log m L.Main) =>
-             ReaderT S.Settings m Env
-createEnv = Env <$> connDB <*> saveUtt where
-    saveUtt = asks S.saveUtterances
-    connDB  = do nstr <- asks S.dbPoolNStripes
-                 nper <- asks S.dbPoolNPerStripe
-                 idle <- asks S.dbPoolMaxIdleTime
-                 pg   <- asks S.pgSettings
-                 rds  <- asks S.redisSettings
-                 lift $ connect $ PoolParams nstr nper idle (pg, rds)
+createEnv :: (MonadIO m, L.Log m L.Main) => ReaderT S.Settings m Env
+createEnv = Env <$> connDB <*> asks S.saveUtterances where
+    connDB = lift . connect =<< asks S.pgSettings
 
 
-destroyEnv :: (MonadIO m,
-               MakeDB m DBase (PoolParams (PG.ConnectInfo, Redis.ConnectInfo)),
-               L.Log m L.Main) =>
-              Env -> m ()
+destroyEnv :: (MonadIO m, L.Log m L.Main) => Env -> m ()
 destroyEnv = disconnect . dBase

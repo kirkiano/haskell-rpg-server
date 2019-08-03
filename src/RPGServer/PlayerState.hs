@@ -15,18 +15,15 @@ import Prelude hiding                    ( getContents )
 import RPGServer.Log                     as L
 import qualified RPGServer.World         as W
 import RPGServer.Play                    ( HasCID(..) )
-import RPGServer.DB.Class                ( AuthDB(..),
-                                           PlayDB(..) )
+import RPGServer.DB.Class                ( PlayDB(..) )
 
 
 data PlayerState = PlayerState { _cid  :: W.CharacterID }
 
 type PS = ReaderT PlayerState
 
-
 instance Monad m => HasCID (PS m) where
   getCID = asks _cid
-
 
 instance (Monad m, L.LogThreshold m) => L.LogThreshold (PS m) where
   logThreshold = lift L.logThreshold
@@ -34,17 +31,16 @@ instance (Monad m, L.LogThreshold m) => L.LogThreshold (PS m) where
 instance L.Log m L.Game => L.Log (PS m) L.Game where
   logWrite lev = lift . (L.logWrite lev)
 
-
-instance AuthDB m => AuthDB (PS m) where
-  authUser u       = lift . (authUser u)
-  loginCharacter b = lift . (loginCharacter b)
-
-
 instance PlayDB m => PlayDB (PS m) where
-  getThing          = mapExceptT lift . getThing
-  getLocation       = mapExceptT lift . getLocation
-  getPlace          = mapExceptT lift . getPlace
-  getOccupants      = mapExceptT lift . getOccupants
-  getContents       = mapExceptT lift . getContents
-  setLocation tid   = mapExceptT lift . (setLocation tid)
-  saveUtterance tid = mapExceptT lift . (saveUtterance tid)
+  loginCharacter b           = mapExceptT lift . (loginCharacter b)
+  getThing                   = mapExceptT lift . getThing
+  getThingDescription        = mapExceptT lift . getThingDescription
+  getTHandle                 = mapExceptT lift . getTHandle
+  getCoPlace                 = mapExceptT lift . getCoPlace
+  getCoExits                 = mapExceptT lift . getCoExits
+  getAddress                 = mapExceptT lift . getAddress
+  getCoOccupantIDs           = mapExceptT lift . getCoOccupantIDs
+  getCoContentHandles        = mapExceptT lift . getCoContentHandles
+  setLocation pid            = mapExceptT lift . (setLocation pid)
+  setUtterance tid           = mapExceptT lift . (setUtterance tid)
+  updateThing                = mapExceptT lift . updateThing

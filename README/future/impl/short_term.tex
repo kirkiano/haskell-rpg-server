@@ -1,0 +1,77 @@
+Normally, one seeks to make a game engine faster.
+But the near-term plan for this one is actually to make it slower---temporarily.
+When performance is not the controlling criterion, as it currently is not,
+the first priority of design becomes modularity.
+And this engine is not yet as modular as it could be, because it interfaces
+with the database directly, and hence exposes the choice of underlying DB
+engine (Postgres), busies itself with talking to it,
+and, as shown above, and may in future burden itself with the intricacies of
+caching.
+The code would be cleaner, smaller, and more focused, if this job was
+instead outsourced to a separate data server (data access layer), which would
+hide the choice
+of underlying DB engine, take on the jobs of caching, conversion, and
+enforcement of any integrity constraints (though one naturally tries to put
+these in the DB engine itself), and with which the game engine would
+communicate by REST API, JSON RPC, or whatever is appropriate.
+By making it
+wait for the data server, this modular separation will of course slow the game
+engine down, especially if communication is via REST API. The separation will
+also introduce the overhead of managing two separate code bases, along with all
+that that entails: separate compilation, ensuring agreement of schema and
+message format, the risk that the data server may not stay as ``fresh'' to the
+developer as the game engine would, etc.
+
+But the plan also paves the way for interesting gains, now and in future.
+First there is the question of what language to use for the data server.
+A glance at
+\footlink{benchmarks}{http://www.techempower.com/benchmarks/} shows two
+server frameworks that vastly outperform
+most others: Rust's Actix, and JVM's Vert.x.\ The latter brings the possibility
+of using Kotlin, arguably the nicest JVM language that is statically typed.
+But unfortunately Kotlin does not teach any interesting concepts: although its
+concrete syntax is better than Java's and Scala's, at the end of the day it is
+just another object-oriented language that pays respect to the functional
+paradigm. (I say this from experience: I have already used Vert.x + Kotlin to
+implement a small financial web server.)
+
+Rust is much more interesting.
+Among its many strengths are that it belongs
+quite fairly to the functional family of languages and yet compiles directly
+to native code, producing a small and fast executable.
+It has immutable
+variables by default, enjoys a thriving ecosystem which includes such packages
+as Tokio, Hyper, and Actix, offers zero-cost abstractions, beautiful ones in
+both functional and asynchronous programming.
+The result is more
+beautiful than what can the JVM can produce, and typically faster. (For all its
+speed after JIT-warmup, the JVM heaves and lumbers, while Rust remains nimble
+and clever.)
+
+But perhaps most importantly, Rust (AFAIK) is the famous inaugurator of linear
+types, in the form of borrow checking.
+This is a new paradigm for many developers, and for all its very friendly error
+messages, the compiler still manages to be a hard taskmaster.
+And even when it relents, compilation times can be long.
+So the language takes time to master.
+But it is worth it.
+The language forces the programmer to learn sophisticated new skills.
+
+So, the near-term plan is to factor database calls out of the Haskell game
+engine and into a Rust data server, leaving the game engine to focus on its
+main task of multiplexing communications.
+This factoring-out can be done in a phased manner.
+The data server can start off providing just one service endpoint, say the one
+that, given the ID of a Thing, provides its name and description.
+Once this is working, the Haskell engine in production can be easily modified
+to use it and can continue to use Postgres directly for the other queries and
+updates.
+As the Rust engine grows to provide more of the data services, the Haskell
+engine can continue to be gradually and easily modified to use them, even in
+production.
+Thus Postgres will eventually be completely factored out of the Haskell game
+engine.
+Since the game is currently only text-based and does not need the detailed
+granularity of, say, a first-person shooter, the communication delays
+introduced by this factoring out of the data access layer should be outweighed
+by the gain in modular simplicity.

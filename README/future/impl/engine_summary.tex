@@ -1,0 +1,15 @@
+In conclusion, if the foregoing considerations are sound, then:
+\begin{itemize}
+    \item The game engine should stay written in Haskell.
+    \item The more biological `react` functionality can be added to it in
+    Haskell or by Rust FFI\@.
+    \item The more sophisticated AI-like aspects of `react` are most easily
+    written in a higher-level language, either Haskell directly in the game
+    engine, or Lisp or Python in a separate driving module, if that does not
+    give rise to spoiling delays.
+    \item Rust can still be used for the data server.
+    \item Rust can still be used for any other driving modules that might be
+    suited to low-level languages, such as those that run graph algorithms or
+    numerical computations---which indeed could be such parts of AI as machine
+    learning and matrix computations.
+\end{itemize}

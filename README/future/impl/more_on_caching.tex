@@ -1,0 +1,43 @@
+Because most messages to clients are limited to carrying names and IDs
+(which are short) and not descriptions (which can be long), it may be tempting
+keep the descriptions out of the cache (thus sparing memory) and/or to spare the
+game loop the work of sending them, by providing them instead via side-channel
+REST API (exposed by Django, say). Unfortunately this won't work, because
+gameplay requires that whenever a character looks at another Thing, the other
+characters in the same place must be immediately notified of the look, which
+of course is most easily done by the game loop.
+(Future gameplay may require similar notifications when
+it is the current Place that is being looked at.) Still, the size of the cache
+can be managed by purging it of data that is no longer used. For example, if
+a player is the last to leave a Place, then the cache can be purged of the
+place's details (name, ID, description, and exits) and of any inanimate Things
+in it.
+
+The question then is how to maintain consistency with the on-disk DB. One
+solution is to take the DB connection out of the game loop and to entrust
+it instead to a separate thread. The game loop would then effect updates
+to the DB only by sending requests via this cooperating thread. (If possible,
+make these requests consist simply of the Haskell IO actions representing DB
+updates.)
+
+For consistency the cooperating thread should access the DB only
+by a single connection, and not a pool. Suppose for example that two
+characters, A and B, are in place 1, and a third, C, is in the adjoining
+place 2. Character A sends the engine a request to move to place 2, and then
+it sends another to move back to place 1. The TCP connection from the client
+will ensure that these requests arrive at the game engine in order, and they
+will therefore remain in order when the thread corresponding to player A pushes
+them onto the game queue. The game loop in turn will process them in order.
+But if it uses a connection pool to talk to the DB, then there is (AFAICT)
+no guarantee that the corresponding DB commands ("set A's location to 2," and
+"set A's location to 1"), will arrive at the DB in the correct order. And even
+if they did, the DB considers them to come from different clients (different
+ports), so it may execute them in the opposite order. And because these
+updates are asynchronous, the game loop has meanwhile moved on, having already
+reported to other players that A moved to 2 and then back to 1. Even if such
+problems might be avoidable by clever engineering of the client, the server
+must not count on them. Instead it should enforce the consistency on its own,
+by using only a single DB connection. (AFAICT,
+such problems do not arise for a network application that is not required to
+inform concurrent users of each others' activities, as in a vanilla web app,
+which is why it can use a pool.)

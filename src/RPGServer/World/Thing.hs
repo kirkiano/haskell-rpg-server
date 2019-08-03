@@ -1,19 +1,18 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module RPGServer.World.Thing ( Character,
-                               CharacterID,
-                               Thing,
+module RPGServer.World.Thing ( CharacterID,
+                               Thing(Thing),
+                               THandle(THandle),
                                ThingID,
                                ThingName,
-                               ThingRec(..) ) where
+                               ThingDesc ) where
 
 import RPGServer.Common
 import Prelude hiding                ( lookup )
 import Data.Aeson                    ( (.=),
                                        object,
                                        ToJSON(..) )
-import Data.Map                      ( lookup )
 import qualified RPGServer.Util.Text as T
 import RPGServer.World.Common        ( ID(..)
                                      , Name(..)
@@ -24,13 +23,31 @@ type ThingID     = Int
 type ThingName   = T.Text
 type ThingDesc   = T.Text
 
+-----------------------------------------------------------
+-- Thing handle
 
-class (ID a, Name a) => Thing a
+data THandle = THandle ThingID ThingName
+             deriving Show
 
-class Thing a => Character a
+instance Eq THandle where
+  (==) = (==) `on` id
 
+instance ID THandle where
+  idn (THandle i _) = i
 
-data ThingRec = ThingRec {
+instance Name THandle where
+  name (THandle _ n) = n
+
+instance ToJSON THandle where
+  toJSON t = object [
+    "type"  .= ("THandle" :: T.Text),
+    "value" .= object ["id"    .= idn t,
+                       "name"  .= name t]]
+
+-----------------------------------------------------------
+-- Thing
+
+data Thing = Thing {
   isAwake   :: Maybe Bool,
   thingId   :: ThingID,
   thingName :: ThingName,
@@ -38,33 +55,22 @@ data ThingRec = ThingRec {
 } deriving Show
 
 
-instance Eq ThingRec where
+instance Eq Thing where
   (==) = (==) `on` id
 
-instance ID ThingRec where
+instance ID Thing where
   idn  = thingId
 
-instance Name ThingRec where
+instance Name Thing where
   name = thingName
 
-instance Desc ThingRec where
+instance Desc Thing where
   desc = thingDesc
 
-instance ToJSON ThingRec where
+instance ToJSON Thing where
   toJSON t = object [
     "type"  .= ("thing" :: T.Text),
     "value" .= object ["id"    .= idn t,
                        "name"  .= name t,
-                       "description"  .= desc t,
+                       "desc"  .= desc t,
                        "awake" .= isAwake t]]
-
-instance T.FromTextMap ThingRec where
-  fromTextMap tm = do
-    is <- lookup "id" tm
-    case (T.decimal is :: Either String (ThingID, T.Text)) of
-      Right (i, s) ->
-        if not $ T.null s
-        then Nothing
-        else ThingRec a i <$> lookup "name" tm <*> lookup "description" tm where
-          a = fmap (== "t") $ lookup "is_awake" tm
-      _ -> Nothing

@@ -13,8 +13,8 @@ module RPGServer.DB.Caching ( CachedDB(..) ) where
 import RPGServer.Common
 import Prelude hiding              ( getContents )
 import qualified RPGServer.Log     as L
+import RPGServer.Listen.Auth       ( Auth(..) )
 import RPGServer.DB.Class          ( MakeDB(..),
-                                     AuthDB(..),
                                      AdminDB(..),
                                      PlayDB(..) )
 
@@ -54,16 +54,12 @@ instance (Monad m,
 
 
 instance (Monad m,
-          AuthDB (ReaderT d m),
-          AuthDB (ReaderT c m)) => AuthDB (C d c m) where
+          Auth (ReaderT d m),
+          Auth (ReaderT c m)) => Auth (C d c m) where
 
-  authUser u p = do
+  authUser creds = do
     db <- asks _db
-    lift $ runReaderT (authUser u p) db
-
-  loginCharacter b cid = do
-    db <- asks _db
-    lift $ runReaderT (loginCharacter b cid) db
+    lift $ runReaderT (authUser creds) db
 
 
 instance (Monad m,
@@ -77,12 +73,17 @@ instance (Monad m,
     where
     goSlow _ = asks _db >>= \db -> lift $ runReaderT (runExceptT $ getThing tid) db
 
-  getLocation       = mapExceptT (withReaderT _db) . getLocation
-  getPlace          = mapExceptT (withReaderT _db) . getPlace
-  getContents       = mapExceptT (withReaderT _db) . getContents
-  getOccupants      = mapExceptT (withReaderT _db) . getOccupants
-  setLocation tid   = mapExceptT (withReaderT _db) . (setLocation tid)
-  saveUtterance tid = mapExceptT (withReaderT _db) . (saveUtterance tid)
+  loginCharacter b    = mapExceptT (withReaderT _db) . (loginCharacter b)
+  getThingDescription = mapExceptT (withReaderT _db) . getThingDescription
+  getTHandle          = mapExceptT (withReaderT _db) . getTHandle
+  getCoPlace          = mapExceptT (withReaderT _db) . getCoPlace
+  getCoExits          = mapExceptT (withReaderT _db) . getCoExits
+  getAddress          = mapExceptT (withReaderT _db) . getAddress
+  getCoContentHandles = mapExceptT (withReaderT _db) . getCoContentHandles
+  getCoOccupantIDs    = mapExceptT (withReaderT _db) . getCoOccupantIDs
+  setLocation pid     = mapExceptT (withReaderT _db) . (setLocation pid)
+  setUtterance tid    = mapExceptT (withReaderT _db) . (setUtterance tid)
+  updateThing         = mapExceptT (withReaderT _db) . updateThing
 
 {-  
   setThing s t = do setThing (_db s) t

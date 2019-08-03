@@ -1,10 +1,10 @@
-name:                haskell-rpg-server
+name:                rpg-server-engine
 version:             0.1.0.0
-github:              "kirkiano/haskell-rpg-server"
+github:              "kirkiano/rpg-server-engine-haskell"
 license:             BSD3
 author:              "Kirkian O"
 maintainer:          "kirkiano137@gmail.com"
-copyright:           "2012-2018 Kirkian O"
+copyright:           "2012-2019 Kirkian O"
 
 extra-source-files:
 - README.md
@@ -16,7 +16,7 @@ synopsis:            RPG server
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on Github at <https://github.com/kirkiano/haskell-rpg-server#readme>
+description:         Please see the README on Github at <https://github.com/kirkiano/rpg-server-engine-haskell#readme>
 
 dependencies:
 - aeson                == 1.2.3.0
@@ -45,6 +45,7 @@ dependencies:
 - regex-compat         == 0.95.1
 - resource-pool        == 0.2.3.2
 - send-receive         == 0.2.2.6
+- stm                  == 2.4.4.1
 - text                 == 1.2.2.2
 - thread-mailbox       == 0.1.2.0
 - time                 == 1.7.0.1
@@ -58,7 +59,7 @@ library:
   source-dirs: src
 
 executables:
-  haskell-rpg-server-exe:
+  rpg-server-engine-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -66,10 +67,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - haskell-rpg-server
+    - rpg-server-engine
 
 tests:
-  haskell-rpg-server-test:
+  rpg-server-engine-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -77,4 +78,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - haskell-rpg-server
+    - rpg-server-engine
