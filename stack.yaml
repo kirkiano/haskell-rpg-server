@@ -79,6 +79,8 @@ extra-deps:
   commit: 433e6711293b3774f85b4600e8f3cb31008233ac
 # Override default flag values for local packages and extra-deps
 # flags: {}
+docker:
+  enable: true
 
 # Extra package databases containing global packages
 # extra-package-dbs: []
