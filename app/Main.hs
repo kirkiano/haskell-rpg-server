@@ -5,68 +5,51 @@
 module Main ( main ) where
 
 import RPGServer.Common
+import Control.Monad.Trans.State            ( evalStateT )
 import qualified Control.Concurrent         as C
 import Control.Concurrent.STM               ( atomically )
 import Control.Concurrent.STM.TQueue        ( newTQueue,
+                                              readTQueue,
                                               writeTQueue )
+import qualified Data.Map                   as M
 import System.IO                            ( stdout )
+import SendReceive                          ( ReceiveResult(Received) )
 import qualified System.Posix.Signals       as P
-import qualified SendReceive                as SR
-import qualified Forwarder                  as F
+import RPGServer.Util.Fork                  ( )
 import qualified RPGServer.Global           as G
-import RPGServer.World                      ( CharacterID )
-import qualified RPGServer.Listen.Websocket as WS
 import qualified RPGServer.Listen.Socket    as S
-import RPGServer.Listen.Bounce              ( admit
-                                            , bounce )
-import RPGServer.GameLoop                   ( gameLoop )
+import RPGServer.Listen.Driver              ( driverAction )
+import RPGServer.Game.Loop                  ( gameLoop,
+                                              LoopState(LoopState) )
 
 
 data TopEnv = TopEnv {
     env                  :: G.Env
-  , forwardTWM           :: G.F G.G
-  , fwdWatcherTID        :: C.ThreadId
-  , websocketListenerTID :: C.ThreadId
   , socketListenerTID    :: C.ThreadId
   }
 
 
 instance Show TopEnv where
   show te = ("sock thread: " ++ show (socketListenerTID te) ++
-             "\nwebsock thread: " ++ show (websocketListenerTID te) ++
              "\nenv: " ++ show (env te))
-  
+
 
 main :: IO ()
 main = G.getSettings >>= go where
-  go s = do print s >> putStrLn ""
-            bracket startup (shutdown s) queryUser
-    where
+  go s = print s >> putStrLn "" >> bracket startup (shutdown s) queryUser where
     lh = (G.logThresh s, stdout)
     startup = do
       e     <- runReaderT (runReaderT G.createEnv s) lh
-      f     <- G.runG e lh G.createForwarderTWM -- :: IO (G.F G.G)
-      fwtch <- G.runG e lh $ G.forkForwarderWatcher f 5000000
-      masterQueue <- atomically newTQueue
-      let sndfw     = void . (F.sendFwdTWM f Nothing) -- ignore response
-          fw m      = sndfw . (F.Forward m)
-          dereg :: CharacterID -> G.G ()
-          dereg     = sndfw . F.Deregister . (:[])
-          reg cid c = sndfw $ F.Register [(cid, SR.send c)]
-          tOut      = G.connTimeout s
-          tries     = G.connTries s
+      q     <- atomically newTQueue
+      let dequeue   = Received <$> (liftIO . atomically . readTQueue $ q)
           sPort     = G.tcpPort s
-          wPort     = G.websockPort s
-          ssPort    = G.sessionServerPort s
-          sendToGameLoop = liftIO . atomically . (\q -> writeTQueue masterQueue q >> return True)
-          slst      = S.listen  sPort $ bounce reg dereg sendToGameLoop tOut tries
-          wlst      = WS.listen ssPort wPort
-                      (\c cid -> admit reg dereg sendToGameLoop c cid)
+          toGame x  = liftIO $ atomically $ writeTQueue q x >> return True
+          -- SR.Send m (Request, SR.Send m Message) -> a -> m ()
+          slst      = S.listen sPort $ driverAction toGame
           frk       = C.forkIO . (G.runG e lh)
-      _         <- frk $ gameLoop masterQueue fw
-      slTID     <- frk slst
-      wlTID     <- frk wlst
-      return $ TopEnv e f fwtch wlTID slTID
+      _     <- frk $ evalStateT (gameLoop dequeue) $ LoopState M.empty
+      slTID <- frk slst
+      return $ TopEnv e slTID
 
 
 queryUser :: TopEnv -> IO ()
@@ -85,7 +68,4 @@ shutdown s te = do
   let lh  = (G.logThresh s, stdout)
       err = userError "terminate"
   C.throwTo (socketListenerTID    te) err
-  C.throwTo (websocketListenerTID te) err
-  C.throwTo (fwdWatcherTID        te) err
-  G.runG (env te) lh (G.destroyForwarderTWM $ forwardTWM te)
   runReaderT (G.destroyEnv $ env te) lh

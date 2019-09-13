@@ -1,0 +1,21 @@
+Things are instances of type \typ{Thing}, which include a name,
+a unique ID,\footnote{Unique only among things.} and possibly a description.
+The subtype \typ{Character} represents characters, though at this time there
+is almost no difference between instances of the two.
+Places are instances of type \typ{Place}, which bears a name,
+a unique ID,\footnote{Unique only among places.}
+possibly a description, and possibly also an address.
+As in real life, an address serves as a tag for a set of places that together
+form a larger location.
+For example each of the abovementioned scraping bots is currently confined to
+a specific address, so that it can move only between the places within that
+address.
+
+Currently the game engine does not distinguish between a live player and a
+non-player character (NPC).
+The words ``player'' and
+``character'' will typically be used to denote live players and
+NPCs indifferently, but sometimes ``player'' will mean a live player\,;
+context should make the meaning clear.
+Similarly, ``thing'' will be used to
+mean either an inanimate object, an NPC, or a live player.

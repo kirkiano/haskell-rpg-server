@@ -5,12 +5,14 @@
              FlexibleInstances #-}
 
 module RPGServer.Common ( module Data.Maybe,
+                          (<|>),
                           ReadMaybe(..),
                           toMaybe,
                           bracket,
                           bracketOnError,
-                          throw,
-                          catch,
+                          throwM,
+                          throwE,
+                          MonadCatch(..),
                           catchJust,
                           handle,
                           handleJust,
@@ -28,7 +30,7 @@ module RPGServer.Common ( module Data.Maybe,
                           ExceptT(..),
                           mapExceptT,
                           runExceptT,
-                          throwE,
+                          withExceptT,
                           intercalate,
                           say,
                           sayn,
@@ -44,23 +46,24 @@ import Control.Monad                        ( forever,
                                               forM,
                                               void,
                                               when )
-import Control.Exception                    ( bracket,
+import Control.Monad.Catch                  ( MonadCatch(..),
+                                              Exception(..),
+                                              SomeException,
+                                              bracket,
                                               bracketOnError,
-                                              throw,
                                               catch,
                                               catchJust,
                                               handle,
                                               handleJust,
-                                              Exception(..),
-                                              SomeException )
+                                              throwM )
 import Control.Monad.IO.Class               ( MonadIO,
                                               liftIO )
-import Control.Concurrent.MonadIO.Utils     ()
 import Control.Monad.Trans.Class            ( MonadTrans,
                                               lift )
 import Control.Monad.Trans.Except           ( ExceptT(..),
                                               mapExceptT,
                                               runExceptT,
+                                              withExceptT,
                                               throwE )
 import Control.Monad.Trans.Reader           ( ReaderT,
                                               runReaderT,
@@ -68,14 +71,13 @@ import Control.Monad.Trans.Reader           ( ReaderT,
                                               withReaderT,
                                               ask,
                                               asks )
+import Control.Applicative                  ( (<|>) )
 import Data.List                            ( intercalate )
 import Data.Function                        ( on )
 import Data.Maybe
 import System.IO.Error                      ( modifyIOError )
 import System.IO                            ( hFlush,
                                               stdout )
-
-
 
 ------------------------------------------------------------
 

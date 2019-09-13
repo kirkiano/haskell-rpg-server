@@ -13,9 +13,9 @@ module RPGServer.DB.Caching ( CachedDB(..) ) where
 import RPGServer.Common
 import Prelude hiding              ( getContents )
 import qualified RPGServer.Log     as L
-import RPGServer.Listen.Auth       ( Auth(..) )
 import RPGServer.DB.Class          ( MakeDB(..),
                                      AdminDB(..),
+                                     DriverDB(..),
                                      PlayDB(..) )
 
 data CachedDB d c = CachedDB {
@@ -54,12 +54,9 @@ instance (Monad m,
 
 
 instance (Monad m,
-          Auth (ReaderT d m),
-          Auth (ReaderT c m)) => Auth (C d c m) where
-
-  authUser creds = do
-    db <- asks _db
-    lift $ runReaderT (authUser creds) db
+          DriverDB (ReaderT d m),
+          DriverDB (ReaderT c m)) => DriverDB (C d c m) where
+  createCharacter = undefined
 
 
 instance (Monad m,

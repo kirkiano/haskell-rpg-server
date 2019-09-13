@@ -7,17 +7,18 @@ module RPGServer.Log ( module System.Log,
                        ConnectionType(..),
                        Transmission(..),
                        Game(..),
-                       General(..),
-                       Auth(..) ) where
+                       Drive(..),
+                       General(..)) where
 
 import RPGServer.Common
 import System.Log
 import System.IO                      ( Handle )
 import RPGServer.Util.ByteString
-import RPGServer.Request              ( Request )
+import RPGServer.Request              ( PlayerRequest )
+import RPGServer.Message              ( PlayerMessage )
+import RPGServer.Value                ( Value )
 import RPGServer.Event                ( Event )
-import RPGServer.Listen.Auth          ( Username )
-import RPGServer.World.Thing          ( CharacterID )
+import RPGServer.World                ( CharacterID )
 
 
 type L = ReaderT (Level, Handle) IO
@@ -45,7 +46,7 @@ data ConnectionType = Socket | Websocket
 
 type ClosureReason = String
 
-data Connection = AcceptedConnection ConnectionType
+data Connection = AcceptedConnection ConnectionType String
                 | RejectedOriginlessConnection ConnectionType
                 | ConnectionClosed ConnectionType ClosureReason
                 deriving Show
@@ -53,19 +54,24 @@ data Connection = AcceptedConnection ConnectionType
 
 data Transmission = SentToHost ConnectionType ByteString
                   | CannotSendToHost ConnectionType (Maybe String)
+                  | WaitingToReceive ConnectionType String
                   | ReceivedFromHost ConnectionType ByteString
                   | CannotReceiveFromHost ConnectionType (Maybe String)
                   deriving Show
 
 
-data Auth = WaitingForCredentialsFrom String
-          | AuthSucceeded Username
-          | AuthFailed Username
-          | UserAlreadyLoggedIn CharacterID
-          deriving Show
+data Drive = RegisteringPlayer CharacterID
+           | DeregisteringPlayer CharacterID
+           deriving Show
 
-
-data Game = Game Request (Maybe Event)
+data Game = CannotReceiveNextRequest
+          | ReceivedPlayerRequest CharacterID PlayerRequest
+          | SendingValue Value CharacterID
+          | CannotSendToCharacter CharacterID PlayerMessage
+          | AddingSender CharacterID
+          | DroppingSender CharacterID
+          | NoSenderForCharacter CharacterID
+          | EmittingEvent Event [CharacterID]
           deriving Show
 
 

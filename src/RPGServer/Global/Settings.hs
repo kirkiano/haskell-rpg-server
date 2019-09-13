@@ -11,26 +11,17 @@ import Control.Monad.Trans.Reader           ( ReaderT,
                                               asks,
                                               runReaderT )
 import Control.Monad.IO.Class               ( MonadIO )
-import Data.Time.Clock                      ( NominalDiffTime )
 import System.IO                            ( stdout )
 import qualified Options.Applicative        as O
 import Data.Semigroup                       ((<>))
 import qualified System.Log                 as L
-import qualified Bouncer                    as B
 import qualified Database.PostgreSQL.Simple as PG
 
 
 data Settings = Settings {
   logThresh         :: L.Level,
-
   tcpPort           :: Int,
-  websockPort       :: Int,
-  sessionServerPort :: Int,
-  connTries         :: B.NumTriesLeft, -- max allowed number of login attempts
-  connTimeout       :: NominalDiffTime,
-  
   pgSettings        :: PG.ConnectInfo,
-
   saveUtterances    :: Bool
 }
 
@@ -39,10 +30,6 @@ instance Show Settings where
   show s = intercalate "\t\n" $ map f [
     ("log threshold",                     show $ logThresh s),
     ("tcp port",                          show $ tcpPort s),
-    ("websocket port",                    show $ websockPort s),
-    ("sessionServer port",                show $ sessionServerPort s),
-    ("max login attempts per connection", show $ connTries s),
-    ("max time to login (seconds)",       show $ connTimeout s),
     ("postgres settings",                 show $ pgSettings s),
     ("save utterances to db",             show $ saveUtterances s)
     ]
@@ -90,16 +77,8 @@ getSettings = O.execParser opts >>= ss2s where
 ss2s :: Subsettings -> IO Settings
 ss2s s = return $ Settings {
   logThresh         = if (debug s) then L.Debug else L.Info,
-
   tcpPort           = _tcpPort s,
-  websockPort       = _tcpPort s + 1000,
-  sessionServerPort = _tcpPort s + 2000,
-
-  connTries         = 3,
-  connTimeout       = 300,
-                 
   pgSettings        = pg,
-
   saveUtterances    = _saveUtt s
 }
   where pg = PG.ConnectInfo "localhost" 5432 "rpg" "" "rpg"
@@ -111,4 +90,4 @@ instance MonadIO m => L.LogThreshold (ReaderT Settings m) where
 
 instance (MonadIO m, Show t) => L.Log (ReaderT Settings m) t where
   logWrite lev msg = do
-    runReaderT (L.logWrite lev $ show msg) . (,stdout) =<< L.logThreshold
+    runReaderT (L.logWrite lev $ show msg) . (, stdout) =<< L.logThreshold

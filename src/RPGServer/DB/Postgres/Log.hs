@@ -10,26 +10,28 @@ module RPGServer.DB.Postgres.Log () where
 
 import RPGServer.Common
 import RPGServer.Util.Text
-import RPGServer.DB.Postgres.Common       ( P,
-                                            execSingle )
+import Data.Text                          ( toLower )
+import RPGServer.DB.Postgres.Common       ( PG, pgE1 )
+import Database.PostgreSQL.Simple         ( Query,
+                                            ToRow )
 import Database.PostgreSQL.Simple.ToField ( Action(Escape),
                                             ToField(..) )
 import Data.Time.Clock.POSIX              ( getCurrentTime )
 import qualified RPGServer.Log            as L
 
 
-instance (Monad m,
-          L.LogThreshold m) => L.LogThreshold (P m) where
+instance (Monad m, L.LogThreshold m) => L.LogThreshold (PG m) where
   logThreshold = lift L.logThreshold
 
 
 instance (MonadIO m,
-          L.Log m L.Connection) => L.Log (P m) L.Connection where
-  logWrite lev (L.AcceptedConnection d) = logConnection lev d Nothing
+          MonadCatch m,
+          L.Log m L.Connection) => L.Log (PG m) L.Connection where
+  logWrite lev (L.AcceptedConnection d s) = logConnection lev d $ Just s
   logWrite lev (L.ConnectionClosed d r) = logConnection lev d $ Just r
   logWrite lev (L.RejectedOriginlessConnection ct) = do
     t <- liftIO getCurrentTime
-    execSingle sql (t, ct, lev) where
+    insertSingle sql (t, ct, lev) where
       sql = "insert into log_rejectedoriginlessconnection \
            \        (time, level_id, type_id) \
            \ select ?, L.id, CT.id \
@@ -38,30 +40,26 @@ instance (MonadIO m,
            \   and L.code = ?"
 
 
-instance L.Log m L.Transmission => L.Log (P m) L.Transmission where
+instance L.Log m L.Transmission => L.Log (PG m) L.Transmission where
   logWrite lev = lift . (L.logWrite lev)
 
 
-instance L.Log m L.Game => L.Log (P m) L.Game where
+instance L.Log m L.Game => L.Log (PG m) L.Game where
   logWrite lev = lift . (L.logWrite lev)
 
 
-instance L.Log m L.Auth => L.Log (P m) L.Auth where
-  logWrite lev = lift . (L.logWrite lev)
-
-
-logConnection :: MonadIO m =>
+logConnection :: (MonadIO m, MonadCatch m) =>
                  L.Level ->
                  L.ConnectionType ->
                  Maybe String ->
-                 P m ()
+                 PG m ()
 logConnection lev ct rM = do
   t  <- liftIO getCurrentTime
   let esc     = Escape . encodeUtf8
       hello   = esc "hello"
       goodbye = esc "goodbye"
       cet = maybe hello (const goodbye) rM
-  execSingle sql (t, rM, cet, lev, ct)
+  insertSingle sql (t, rM, cet, lev, ct)
   where
     sql = "insert into log_connectionevent \
          \        (time, event_id, level_id, type_id, comment) \
@@ -80,4 +78,12 @@ instance ToField L.ConnectionType where
     f L.Socket    = "s"
     
 instance ToField L.Level where
-  toField = Escape . encodeUtf8 . text
+  toField = Escape . encodeUtf8 . toLower . text
+
+-----------------------------------------------------------
+
+insertSingle :: (MonadIO m, MonadCatch m, Show q, ToRow q)
+                =>
+                Query -> q -> PG m ()
+insertSingle sql prms = runExceptT (pgE1 sql prms) >>= either bad return where
+  bad = fail . ("Postgres: log insertion error: " ++) . show

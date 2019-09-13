@@ -1,3 +1,3 @@
 # rpg-server-engine-haskell
 
-See `README/main.pdf`.
+See the file to which `README.pdf` is linked.
