@@ -7,34 +7,31 @@ module RPGServer.Log ( module System.Log,
                        ConnectionType(..),
                        Transmission(..),
                        Game(..),
-                       General(..),
-                       Auth(..) ) where
+                       Drive(..),
+                       SendingFunction(..),
+                       General(..)) where
 
 import RPGServer.Common
 import System.Log
 import System.IO                      ( Handle )
 import RPGServer.Util.ByteString
-import RPGServer.Request              ( Request )
+import RPGServer.Request              ( PlayerRequest, Request )
+import RPGServer.Message              ( PlayerMessage, Message )
+import RPGServer.Value                ( Value )
 import RPGServer.Event                ( Event )
-import RPGServer.Listen.Auth          ( Username )
-import RPGServer.World.Thing          ( CharacterID )
+import qualified RPGServer.World      as W
 
 
 type L = ReaderT (Level, Handle) IO
 
 type Port = Int
 
-data Main = StartingForwarder
-          | StoppingForwarder
-          | StartingForwarderWatcher
-          | StoppingForwarderWatcher
-          | AttemptingToConnectToPostgres
+data Main = AttemptingToConnectToPostgres
           | CannotConnectToPostgres String
           | ConnectedToPostgres
           | DisconnectedFromPostgres
           | ListeningForConnections ConnectionType Port
           | NoLongerListeningForConnections ConnectionType
-          | WebsocketError
           | SocketError String
           deriving Show
 
@@ -45,7 +42,7 @@ data ConnectionType = Socket | Websocket
 
 type ClosureReason = String
 
-data Connection = AcceptedConnection ConnectionType
+data Connection = AcceptedConnection ConnectionType String
                 | RejectedOriginlessConnection ConnectionType
                 | ConnectionClosed ConnectionType ClosureReason
                 deriving Show
@@ -53,19 +50,30 @@ data Connection = AcceptedConnection ConnectionType
 
 data Transmission = SentToHost ConnectionType ByteString
                   | CannotSendToHost ConnectionType (Maybe String)
+                  | WaitingToReceive ConnectionType String
                   | ReceivedFromHost ConnectionType ByteString
                   | CannotReceiveFromHost ConnectionType (Maybe String)
                   deriving Show
 
 
-data Auth = WaitingForCredentialsFrom String
-          | AuthSucceeded Username
-          | AuthFailed Username
-          | UserAlreadyLoggedIn CharacterID
-          deriving Show
+data Drive = RegisteringPlayer W.CID
+           | DeregisteringPlayer W.CID
+           deriving Show
 
 
-data Game = Game Request (Maybe Event)
+data SendingFunction = AddingSendingFunction
+                     | DroppingSendingFunction
+                     | NoSendingFunction
+                     deriving Show
+
+
+data Game = CannotReceiveNextRequest
+          | SendingValue Value W.CID
+          | CannotSendToCharacter W.CID PlayerMessage
+          | SendingPlayerMessage W.CID PlayerMessage
+          | CannotSendMessage Message
+          | SendingFunction SendingFunction W.CID
+          | EmittingEvent Event [W.CID]
           deriving Show
 
 

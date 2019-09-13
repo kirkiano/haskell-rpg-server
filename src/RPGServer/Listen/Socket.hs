@@ -94,21 +94,20 @@ instance (MonadIO m,
     isopen <- C.isOpen s
     if not isopen
        then return SR.CannotReceive
-       else do
-      let bad e = do
-            let eS = show (e :: SomeException)
-            L.log L.Debug $ L.CannotReceiveFromHost L.Socket $ Just eS
-            C.closeCannotReceive s
-            return SR.CannotReceive
-          good b = do
-            L.log L.Debug $ L.ReceivedFromHost L.Socket b
-            return $ SR.Received b
-      L.log L.Debug $ L.General "socket waitRecv"            
-      etr <- liftIO $
-             catch
+       else either bad good =<< getNextLine where
+         getNextLine = do
+           L.log L.Debug $ L.WaitingToReceive L.Socket $ show s
+           liftIO $ catch
              (Right . encodeUtf8 . pack <$> Y.hGetLine (_h s))
              (return . Left)
-      either bad good etr
+         good b = do
+           L.log L.Debug $ L.ReceivedFromHost L.Socket b
+           return $ SR.Received b
+         bad e = do
+           let eS = show (e :: SomeException)
+           L.log L.Debug $ L.CannotReceiveFromHost L.Socket $ Just eS
+           C.closeCannotReceive s
+           return SR.CannotReceive
 
 
 listen :: Int -> (forall c. C.Client G.G c => c -> G.G ()) -> G.G ()
@@ -117,17 +116,13 @@ listen port continue = G.gCatch act err where
   err e   = do
     let msg = "Listening socket: " ++ show (e :: SomeException)
     L.log L.Critical $ L.SocketError msg
-    throw e
+    throwM e
   loop sl = forever $ do
     G.gBracketOnError
-      (do let msg = "Listening for incoming connection from " ++ show sl
-          L.log L.Debug $ L.General msg
-          liftIO $ S.accept sl)
-      (clskt . fst)
+      (liftIO $ S.accept sl)
+      (\(s, _) -> closeSocket s)
       (\(s, sAddr) -> do
-          L.log L.Debug $ L.General $ "Accepted " ++ show s
-          L.log L.Info $ L.AcceptedConnection L.Socket
-          L.log L.Debug $ L.General $ "Making Socket for socket " ++ show s
+          L.log L.Info $ L.AcceptedConnection L.Socket $ show s
           skt <- makeSocket s sAddr
           let wskt = W.wrapConn skt :: W.Wrapped G.G Socket
           env <- ask
@@ -163,8 +158,8 @@ destroyListener s = do
   L.log L.Info $ L.NoLongerListeningForConnections L.Socket
 
 
-clskt :: S.Socket -> G.G ()
-clskt s = do
+closeSocket :: S.Socket -> G.G ()
+closeSocket s = do
   L.log L.Debug $ L.General $ "Closing " ++ show s
   liftIO $ S.close s
 

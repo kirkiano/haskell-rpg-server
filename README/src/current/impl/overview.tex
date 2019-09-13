@@ -1,0 +1,66 @@
+The game engine is implemented in Haskell and imports helper libraries from
+other repos.
+The advantages of Haskell include
+garbage collection, green threads, strict immutability, algebraic data types,
+type inference, a parametric type system that includes ad hoc polymorphism plus
+constraints, lazy evaluation and equational reasoning, a surpassingly terse
+and elegant syntax, libraries rich in convenient abstractions, and, of course,
+portability.
+The disadvantages of Haskell include the lags of
+garbage collection, the profligate use of memory by a lazy
+language, and an inability to match the speeds of a low-level language such as
+C, at least for most kinds of computation (though Haskell does do
+\footlink{better than the JVM}
+{https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/haskell.html}
+on several measures).
+
+The engine has two overall requirements:
+\begin{itemize}
+    \item {\em Multiplexing.} It must multiplex incoming game requests and
+    linearize them in some order.
+    \item {\em Consistency.} It must apply them to the state of the game,
+    in the same order.
+    In the case of requests that ask for changes of state, this not only
+    means that updates to the database should happen in the same order,
+    but also that event notifications informing other players of the
+    update also be sent out in the same order.
+\end{itemize}
+The engine fulfills these requirements by running a game loop in a dedicated
+thread and supplying it with:
+\begin{itemize}
+    \item A queue of requests, called the \newterm{game queue}.
+    \item Exclusive access to the game database;
+    \item {\em Sending functions} that convey to the desired recipients
+    server messages bearing event notifications or requested data values.
+\end{itemize}
+On each iteration, the loop pops a request off the queue, services it, hitting
+the database if necessary, and uses the appropriate sending functions to notify
+the appropriate characters of the event that just occurred.
+The game loop does not, and should not, know how requests make it onto its
+queue.
+Nor should it know how sending functions work.
+
+Requests are of course pushed onto the queue by client threads, as discussed
+below.
+But here it is important to note that these clients should not be given
+access either to the database or to the sending functions by which server
+messages are conveyed to other clients.
+The reason is that the only way to implement this functionality correctly
+would be to make the client actions into critical sections, so that calls to
+the database and sending functions would be atomic.
+The idiomatic way to achieve this in Haskell
+would be to somehow embed database calls in the `STM` monad.
+But this monad works by attempting retries, so it might easily repeat a
+particular database call any number of times.
+Even if the call were idempotent, this would be unacceptably inefficient.
+For these reasons, the master thread (the one running the game loop) should
+monopolize access to both the database and the messaging mechanisms (sending
+functions).
+In this way can those operations are kept consistent.
+
+We note here in passing that we rule out the use of a distributed stream
+processor such as \footlink{Kafka}{https://kafka.apache.org/powered-by},
+if only because its storage of all events would
+for our purposes require too much disk space.
+The possibility of using other languages and runtimes is discussed further
+in \S\ref{subsec:future:impl}.

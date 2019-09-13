@@ -1,0 +1,71 @@
+Recall that a live player connects to the engine via the live driver.
+Ideally, when the player is done playing, he or she sends an explicit quit
+request, which arrives at the engine via the driver.
+More realistically, however, a person quits the game abruptly, by, say,
+closing a browser window or by otherwise killing his or her local
+client process ungracefully.
+For this reason, the live driver must take responsibility for detecting even
+unannounced disconnections and sending the engine quit requests on their behalf.
+Otherwise the character will remain logged in but inert, and other characters
+will wonder why it is stuck in one place and not interacting.
+
+Similarly, a driver itself may need to disconnect from the game;
+perhaps a developer needs to shut it down for an upgrade.
+In this case the driver too should first send the engine quit requests on
+behalf of all its characters.
+This means that a driver should maintain its own internal set
+of currently managed characters.
+
+But a driver too may disconnect abruptly.
+It might crash, or its connection to the engine may fail.
+Since it will not have had a chance to send quit requests on behalf of its
+many characters, they will all be left in the ``dead'' state just described,
+spoiling the game even more.
+
+So, to prevent this undesirable outcome, the engine itself must take
+responsibility for
+``cleaning up'' after a driver that disconnects ungracefully.
+This means that the engine too must keep internal sets of \cid s, each
+associated with its driver.
+When a driver suddenly disappears, the engine must iterate over the
+corresponding set and send each character home and make it quit.
+
+The question then is where to put these sets.
+Since each driver gets its own driver action in the engine, it might make
+sense to put them inside the actions.
+An action's companion thread, which watches messages from
+the game loop, could be tasked with updating the set whenever it sees a
+message confirming that a character has been allowed to join or leave
+the game.
+In case of sudden disconnection, the companion thread would clean up the
+characters in the set, and would then expire.
+The advantage of this scheme is that it keeps details about drivers
+out of the game loop.
+
+But unfortunately it won't work.
+Suppose for example that the driver thread receives from the driver a request
+to make character~X join the game, and suppose that the connection dies
+immediately after the action pushes this request onto the game queue.
+Then there is nothing to stop the companion thread from cleaning up the
+characters in its set, and even from expiring altogether, {\em before} it
+receives the game loop's confirmation that character~X has joined the game.
+X~would then remain permanently logged in, and inert.
+
+Perhaps, then, it is the game loop that should hold the character sets,
+one per driver.
+Upon sudden disconnection of its driver, a driver thread would then send the
+game loop a special request telling it to clean its characters out.
+The request would have to carry a label identifying the driver uniquely,
+which means that the game engine would have to have already assigned that label
+to the driver when the latter first connected.
+This already shows the disadvantages of the scheme: it complicates types,
+flows, and the game loop itself.
+
+Fortunately there is a third way: rather than put the character set inside the
+driver action's companion thread, entrust it to the driver action itself.
+As soon as the action sees a request to make a character join or quit the game,
+it updates the set before it pushes the request onto the game queue.
+In this way the set always represents all the characters of interest to the
+driver, and if the driver then disconnects abruptly, the cleanup will not
+miss any of them.
+Thus the best solution is also the simplest.

@@ -1,0 +1,58 @@
+When a driver connects, the engine spawns a thread, called a
+\newterm{driver thread}, in which it runs the \newterm{driver action}.
+This action creates for the driver a queue that is ready to receive
+server messages, and it prepares a {\em sending function} that enqueues server
+messages onto it.
+It then spawns a companion thread whose job is to pop server messages off this
+queue and send them back to the driver via the socket.
+Finally it runs a loop that waits for the driver's requests, preprocesses
+them as discussed below, and then pushes them onto the game queue.
+
+The requests that a driver can make are as follows, and describe the lifecycle
+of an NPC:
+\begin{enumerate}
+    \item {\em Create}.
+    Before it can spawn an NPC, a driver first has to ask the game loop to
+    create it, if it does not already exist.
+    This request should include the desired name of the NPC, which should be
+    unique, along with the ID of the place in which to put it, if it does not
+    already exist somewhere else.
+    (The request does not have to include a description of the NPC\@.)
+    Having received it, the driver action pairs this request with the
+    sending function and pushes the pair onto the game queue.
+    Having received the pair, the game loop creates the character in the
+    database and uses the sending function to return its \cid\ to the driver
+    action's companion thread, which in turn sends it along to the driver.
+    \item {\em Join}.
+    Having received the \cid, the driver can now ask the
+    engine to make the character join the game.\footnote{The live driver will
+    not need to create characters, only to request that they join.
+    That is why joining and creation are two separate requests.}
+    Having received it, the driver action again pairs this request with its
+    sending function and sends them to the game loop, which in turn activates
+    the character and {\em associates} its \cid\ with the sending function.
+    The latter then becomes the means by which that character receives the game
+    loop's messages.
+    \item {\em Play}.
+    If the previous two steps represent administrative requests by a driver,
+    then this one is non-administrative, in that it represents a play request
+    from a particular character (\eg, look, speak, \etc).
+    The driver merely wraps it before passing it along to the game loop.
+    \item {\em Player quits}.
+    As part of making the character quit, the game loop dissociates the
+    corresponding \cid\ from the sending function (though
+    it may of course have the same sending function associated elsewhere with
+    other characters managed by this particular driver).
+    \item {\em Destroy}.
+    Delete the character with the given \cid\ from the database.
+    \item {\em Quit}.
+    The driver decides to disconnect from the game.
+    This scenario is discussed in \S\ref{sec:current:impl:driver-disconnection}.
+\end{enumerate}
+It is worth emphasizing that although the game engine deals with the concept
+of drivers, the game loop itself does not, and should not, know about them or
+their queues;
+hence the use of sending functions to abstract those details away.
+As a consequence, a character should be managed by at most one driver,
+and the responsibility falls on drivers not to attempt to manage
+a character jointly.

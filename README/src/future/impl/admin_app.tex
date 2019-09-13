@@ -1,0 +1,19 @@
+The drivers' REST APIs, intended for consumption by the game
+administrator, can form the backend data sources for an admin app that
+the administrator could use to survey the running game,
+tuning its parameters and those of the various drivers, responding to
+various adminstrative problems, \etc
+This would require the game engine to set
+up a special dataflow for such administration, sending server messages down
+it regardless of place or character.
+
+The admin app could implement a map of the world, showing not just places and
+exits, but also the current locations of things and characters.
+For DRYness this functionality should be shared with the game app, allowing
+characters to see the map and use it.
+For the sake of realism, a character should probably not be
+allowed to see the locations of other characters, unless of course he
+or she has the power of abusive surveillance.
+
+The game app is implemented in Angular, so, to be polyglot, this app could be
+implemented in React.

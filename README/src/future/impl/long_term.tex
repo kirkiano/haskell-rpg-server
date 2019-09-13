@@ -1,0 +1,108 @@
+As the number of players grows, and with it the volume of communication, the
+performance inefficiencies of this modular design will eventually be felt.
+There are multiple solutions for speeding things up, and, like the refactoring
+just described, they can be applied gradually.
+First, as alluded to above, the data server can use a cache, such as Redis
+(without of course having to expose that implementation detail to the game
+engine or any other backend component).
+Although the online articles mentioned above say that
+Redis will not improve Postgres' own caching by more than a factor of two,
+\footlink{this one from Amazon}{https://aws.amazon.com/redis/}
+makes a stronger claim:
+\begin{quote}
+{\small
+All Redis data resides in the server's main memory, in contrast to databases
+such as PostgreSQL, Cassandra, MongoDB and others that store most data on disk
+or on SSDs. In comparison to traditional disk based databases where most
+operations require a roundtrip to disk, in-memory data stores such as Redis
+don't suffer the same penalty.
+They can therefore support an order of
+magnitude more operations and faster response times.
+The result is---blazing
+fast performance with average read or write operations taking less than a
+millisecond and support for millions of operations per second.
+}
+\end{quote}
+This paragraph should be read carefully.
+What it calls "an order of magnitude" better is not the latency, but the
+throughput.
+The latency it simply calls "faster" (assuming that is what is meant by
+"response times").
+And these claims are conditioned on using Redis not simply to cache some of the
+data, but to hold "all" of it.
+For a game with a lot of characters, even if it
+is only text-based, this could end up requiring more RAM than is available.
+Still, under such conditions throughput is more important than latency (as
+long as the latency is not unreasonably bad).
+As a compromise, Redis can be used not as an in-memory DB but simply as a cache
+to be used on an as-needed basis.
+That should bring significant speedups, and again it
+could be phased in to the Rust server piecemeal, even in production, making
+the refactoring low-stress.
+
+If this is not fast enough, then Redis can be chucked and the Rust data server
+can use its own internal cache, in the form of simple dictionaries,
+as mentioned above.
+This brings orders of magnitude of speedup over Redis, since it would dispense
+with the overhead of serialization and networking. (See Peter Norvig's
+\footlink{approximate timing table}{http://norvig.com/21-days.html\#answers}
+for handy figures.)
+
+But these two overheads would remain between the data server and the Haskell
+game engine.
+What if more speed is needed?
+Then the data server and game engine can be kept on the same machine, and rather than talk to each other
+over TCP, they can use a Unix Domain Socket.
+According to
+\footlink{this newsgroup posting}{https://lists.freebsd.org/pipermail/freebsd-performance/2005-February/001143.html},
+referenced by
+\footlink{this SO posting}{https://stackoverflow.com/questions/14973942/tcp-loopback-connection-vs-unix-domain-socket-performance},
+the Unix Domain Socket reduces latency by two-thirds, and increases throughput
+by a factor of seven.
+
+What if even more speed is needed?
+Then the Haskell game engine itself can introduce its own internal cache,
+again in the form of dictionaries internal to the game loop, to be modified by
+functional updates.
+Since a cache hit would save a communication to the data server,
+this should speed the query up by one or more orders of magnitude.
+Making the dictionaries mutable instead would speed them up even further,
+but it would also clutter the code up with MVars.
+
+If at this point more speed is needed, then, since Rust is fast and would by
+this point be using its own internal cache, the bottleneck would presumably be
+somewhere in the game engine itself.
+If profiling reveals bottlenecks,
+then they may be curable by FFI call to custom routines written in C (or Rust).
+But if profiling identifies no specific bottleneck, then it means we have hit
+the limits of Haskell itself.
+It might not be able to context switch between threads fast enough,
+or its garbage collection may introduce lags, or it may simply not be able to
+lazily evaluate expressions any faster.
+
+In this case, the functionality of the game engine---chiefly, multiplexing
+messages---can be pushed into the Rust data server, making the latter a more
+monolithic game engine of very high speed.
+Rust's Actix uses the actor model,
+to which the \co{ThreadWithMailbox} abstraction maps quite naturally.
+So the refactoring will not require reinventing the wheel conceptually:
+Rust will still have a master game loop thread/actor,
+client connections will still be represented by actors,
+and so will drivers (see below),
+both internally and as they are represented within the main game engine.
+
+The challenge will rather be the change's considerable size.
+Unlike the smooth, piecemeal refactorings envisioned above,
+this one would have to happen all in one go,
+since the logic of the game loop---multiplexing multiple clients, including
+drivers (see below)---would all have to be transferred from
+Haskell to Rust all together.
+
+It turns out from the discussion of the `react` function below that the game
+engine should probably not be implemented in Rust.
+But if ever those
+considerations should change, then the reduction in modularity due to
+such an implementation would not spoil separation of concerns too badly,
+because a game engine's
+core function is, after all, logically "flat": all it does is multiplex
+messages and maybe also talk to the underlying database.

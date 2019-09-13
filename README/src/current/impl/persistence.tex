@@ -1,0 +1,20 @@
+
+Currently the disk-resident database is Postgres, and this is not likely to
+change, as the relational model suits the game naturally.
+An earlier version of the engine interposed
+Redis as a cache, but apparently Postgres does its own caching so well that on
+average Redis cannot accelerate queries by more than a factor of two.\footnote{
+See \url{https://thebuild.com/blog/2015/10/30/dont-assume-postgresql-is-slow/}
+and \url{http://code.jjb.cc/benchmarking-postgres-vs-redis}.
+But see
+also the conflicting report mentioned below.} Roughly the same is presumably
+true of the other well known on-disk databases, \eg, MySQL\@.
+\S\ref{subsec:future:impl} includes a discussion of ways to make
+the engine faster.
+
+Currently the game loop waits for a database update to complete just as it
+waits for a query to return data.
+There is therefore no point in pooling multiple connections, as the game loop
+would use only one of them at a time.
+Another recommendation against pooling
+is given below.

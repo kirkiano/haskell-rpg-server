@@ -18,14 +18,11 @@ module RPGServer.Global.Env ( Env(..),
 import RPGServer.Common
 import Prelude hiding                       ( getContents )
 import GHC.IO.Handle                        ( Handle )
-import qualified Forwarder.Log              as FL
 import qualified RPGServer.Log              as L
 import qualified RPGServer.Global.Settings  as S
-import RPGServer.World                      ( CharacterID )
-import RPGServer.Message                    ( Message )
-import RPGServer.Listen.Auth                ( Auth(..) )
 import RPGServer.DB.Class                   ( AdminDB(..),
                                               PlayDB(..),
+                                              DriverDB(..),
                                               MakeDB(..) )
 import qualified RPGServer.DB.Postgres      as PG
 
@@ -72,36 +69,17 @@ gBracketOnError create destroy action = do
 instance L.LogThreshold G where
   logThreshold = lift L.logThreshold
 
-instance L.Log G L.Connection where
-  logWrite lev = withReaderT dBase . (L.logWrite lev)
-
-instance L.Log G L.Main where
-  logWrite lev = lift . (L.logWrite lev)
-
-instance L.Log G L.Transmission where
-  logWrite lev = lift . (L.logWrite lev)
-
-instance L.Log G L.Game where
-  logWrite lev = lift . (L.logWrite lev)
-
-instance L.Log G L.Auth where
-  logWrite lev = lift . (L.logWrite lev)
-
-instance L.Log G L.General where
+instance Show a => L.Log G a where
   logWrite lev = lift . (L.logWrite lev)
 
 ------------------------------------------------------------
-
-instance L.Log G (FL.ForwardLog CharacterID m Message) where
-  logWrite lev = lift . (L.logWrite lev)
-
-------------------------------------------------------------
-
-instance Auth G where
-  authUser            = withReaderT dBase . authUser
 
 instance AdminDB G where
   markLoggedInSet     = mapExceptT (withReaderT dBase) . markLoggedInSet
+
+
+instance DriverDB G where
+  createCharacter n   = mapExceptT (withReaderT dBase) . (createCharacter n)
 
 
 instance PlayDB G where
