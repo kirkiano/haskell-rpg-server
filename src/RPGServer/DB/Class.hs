@@ -44,3 +44,5 @@ class PlayDB m => DriverDB m where
   createThing          :: W.ThingName   -> W.PlaceID     -> D m TID
   thingToCharacter     :: TID           -> W.PlaceID     -> D m ()
   createCharacter      :: W.ThingName   -> W.PlaceID     -> D m W.CID
+
+  destroyCharacter     :: W.CID                          -> D m ()

@@ -56,7 +56,10 @@ instance (Monad m,
 instance (Monad m,
           DriverDB (ReaderT d m),
           DriverDB (ReaderT c m)) => DriverDB (C d c m) where
-  createCharacter = undefined
+  createThing      = undefined
+  thingToCharacter = undefined
+  createCharacter  = undefined
+  destroyCharacter = undefined
 
 
 instance (Monad m,

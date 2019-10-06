@@ -153,18 +153,18 @@ packages:
     commit: 7613c626346f7a0b58e4c2934e85fd2c63ec17d9
 - completed:
     cabal-file:
-      size: 1591
-      sha256: c21b589e1ec62ff4187c5bbf885e0e47bad5c245266a7fe7d013168d00af9415
+      size: 2278
+      sha256: 75840b6bd9fa1453f1cdbcf0a9d038fad6deef39f05784f587d7b25a9d0a17c9
     name: send-receive
-    version: 0.2.2.7
+    version: 0.2.6.0
     git: git@github.com-kirkiano:kirkiano/haskell-send-receive.git
     pantry-tree:
-      size: 1040
-      sha256: 92c02fc66ca0e3e5583c212e7933e86061e01b858eeac59dd3e5ac96fa2b6063
-    commit: b62ef6a225ba79c36e53ab2f571a0caf2c68ace9
+      size: 1290
+      sha256: a995a4e7761be609a91413c5156cbca819b751c988586a376075ebab8b99bc9c
+    commit: 235e3e1e43105ae9eaa23c7bbaa8f57d21007833
   original:
     git: git@github.com-kirkiano:kirkiano/haskell-send-receive.git
-    commit: b62ef6a225ba79c36e53ab2f571a0caf2c68ace9
+    commit: 235e3e1e43105ae9eaa23c7bbaa8f57d21007833
 - completed:
     cabal-file:
       size: 2114

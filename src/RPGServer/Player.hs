@@ -11,7 +11,7 @@ import Prelude hiding                   ( getContents )
 import RPGServer.Log                    as L
 import RPGServer.World                  ( CharacterID )
 import RPGServer.Play                   ( HasCID(..) )
-import RPGServer.DB.Class               ( PlayDB(..), DriverDB(..) )
+import RPGServer.DB.Class               ( PlayDB(..) )
 
 
 newtype Player = Player { _cid :: CharacterID }
@@ -44,7 +44,3 @@ instance PlayDB m => PlayDB (PS m) where
   setLocation pid            = mapExceptT lift . (setLocation pid)
   setUtterance tid           = mapExceptT lift . (setUtterance tid)
   updateThing                = mapExceptT lift . updateThing
-
-
-instance DriverDB m => DriverDB (PS m) where
-  createCharacter n          = mapExceptT lift . (createCharacter n)

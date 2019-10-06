@@ -79,7 +79,10 @@ instance AdminDB G where
 
 
 instance DriverDB G where
+  createThing         = undefined
+  thingToCharacter    = undefined
   createCharacter n   = mapExceptT (withReaderT dBase) . (createCharacter n)
+  destroyCharacter    = mapExceptT (withReaderT dBase) . destroyCharacter
 
 
 instance PlayDB G where

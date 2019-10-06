@@ -15,9 +15,7 @@ import RPGServer.Common
 import System.Log
 import System.IO                      ( Handle )
 import RPGServer.Util.ByteString
-import RPGServer.Request              ( PlayerRequest, Request )
-import RPGServer.Message              ( PlayerMessage, Message )
-import RPGServer.Value                ( Value )
+import RPGServer.Request              ( Request )
 import RPGServer.Event                ( Event )
 import qualified RPGServer.World      as W
 
@@ -67,12 +65,8 @@ data SendingFunction = AddingSendingFunction
                      deriving Show
 
 
-data Game = CannotReceiveNextRequest
-          | SendingValue Value W.CID
-          | CannotSendToCharacter W.CID PlayerMessage
-          | SendingPlayerMessage W.CID PlayerMessage
-          | CannotSendMessage Message
-          | SendingFunction SendingFunction W.CID
+data Game = SendingFunction SendingFunction W.CID
+          | ProcessingRequest Request
           | EmittingEvent Event [W.CID]
           deriving Show
 

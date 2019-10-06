@@ -60,9 +60,9 @@ extra-deps:
 - unix-2.7.2.2
 - utf8-string-1.0.1.1
 - git: git@github.com-kirkiano:kirkiano/haskell-loggit.git
-  commit: 7613c626346f7a0b58e4c2934e85fd2c63ec17d9
+  commit: 0af61c80ef95a7feb63a046046f93530c53a8d4b
 - git: git@github.com-kirkiano:kirkiano/haskell-send-receive.git
-  commit: b62ef6a225ba79c36e53ab2f571a0caf2c68ace9
+  commit: ed6c10b44f8dffa08fad475629e8d6bc8e7357de
 - git: git@github.com-kirkiano:kirkiano/rpg-common-haskell.git
   commit: 73585e06c2bd4c97c7440155085cd4ceb5e930a3
 

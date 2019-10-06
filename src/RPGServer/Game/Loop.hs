@@ -11,10 +11,8 @@ module RPGServer.Game.Loop ( gameLoop,
 
 import RPGServer.Common           hiding ( say, handle )
 import Control.Monad.Trans.State         ( StateT, gets, put )
-import Control.Concurrent                ( threadDelay )
 import qualified Data.Map                as M
 import qualified System.Log              as L
-import qualified SendReceive             as SR
 import qualified RPGServer.Log           as L
 import RPGServer.World                   ( CID )
 import RPGServer.Player                  ( Player(Player) )
@@ -22,7 +20,6 @@ import RPGServer.Message                 ( Message(..),
                                            PlayerMessage(..), )
 import RPGServer.Request                 ( Request(..),
                                            PlayerRequest(Join, Quit))
--- import RPGServer.Error                   ( GameError(CannotGrantRequest) )
 import RPGServer.DB.Class                ( DriverDB, PlayDB )
 import RPGServer.DB.Play                 ( )
 import RPGServer.DB.Drive                ( )
@@ -31,7 +28,7 @@ import RPGServer.Game.Drive              ( drive )
 
 
 data LoopState m = LoopState {
-  _smap :: M.Map CID (SR.Send m PlayerMessage)
+  _smap :: M.Map CID (PlayerMessage -> m ())
 }
 
 type L m = StateT (LoopState m) m
@@ -51,24 +48,20 @@ gameLoop :: (MonadIO m,
              L.Log m Request,
              L.Log m Message)
             =>
-            SR.WaitReceive m (Request, SR.Send m Message) -> L m ()
+            m (Request, Message -> m ()) -> L m ()
 gameLoop nextRequest = forever $ lift nextRequest >>= handle where
 
-  handle (SR.Received p) = L.log L.Debug (fst p) >> process p
-  handle _               = return ()
-  {- handle SR.CannotReceive = do L.log L.Critical L.CannotReceiveNextRequest
-                               liftIO $ threadDelay 10_000_000 -- wait 10s -}
+  handle p = lift (L.log L.Debug $ L.ProcessingRequest $ fst p) >> process p
 
   process (PlayerRequest cid pq, sm) = processPlayerRequest cid pq sm
   process (q, sendMsg)               = lift $ do
     msg <- drive q
     L.log (logMsgLevel msg) msg
-    sendSuccess <- sendMsg msg
-    when (not sendSuccess) $ L.log L.Info $ L.CannotSendMessage msg
+    sendMsg msg
 
 
 processPlayerRequest :: (MonadIO m, PlayDB m, L.Log m L.Game) =>
-                        CID -> PlayerRequest -> SR.Send m Message -> L m ()
+                        CID -> PlayerRequest -> (Message -> m ()) -> L m ()
 processPlayerRequest cid pq sendMsg = either err ok =<< playIt where
   playIt         = lift $ runReaderT (runExceptT $ play pq) $ Player cid
   ok             = (updateSendMap pq cid sendPlayer >>) . emit
@@ -78,24 +71,21 @@ processPlayerRequest cid pq sendMsg = either err ok =<< playIt where
     eventsNotify (evt, cids) = do
       L.log L.Debug $ L.EmittingEvent evt cids
       forM cids $ sendCharacter $ EventMessage evt
-    report v = do let vMsg = ValueMessage v
-                  L.log L.Debug $ L.SendingPlayerMessage cid vMsg
-                  lift . void . sendPlayer $ vMsg
+    report = lift . void . sendPlayer . ValueMessage
 
 
 sendCharacter :: (MonadIO m, L.Log m L.Game) => PlayerMessage -> CID -> L m ()
 sendCharacter msg cid = gets _smap >>= (maybe fatal sendOK . (M.lookup cid))
   where fatal         = lg $ L.SendingFunction L.NoSendingFunction cid
         lg            = L.log L.Critical
-        sendOK sendIt = do ok <- lift . sendIt $ msg
-                           when (not ok) $ lg $ L.CannotSendToCharacter cid msg
+        sendOK sendIt = lift . sendIt $ msg
 
 
 updateSendMap :: (MonadIO m, L.Log m L.Game)
                  =>
                  PlayerRequest ->
                  CID ->
-                 SR.Send m PlayerMessage ->
+                 (PlayerMessage -> m ()) ->
                  L m ()
 updateSendMap q cid sendPlayer = do
   smap0 <- gets _smap

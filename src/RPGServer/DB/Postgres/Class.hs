@@ -13,7 +13,6 @@ import RPGServer.Common
 -- import qualified Data.ByteString.Base64     as B64
 -- import qualified Data.ByteString            as B
 -- import qualified Data.ByteString.Internal   as B
-import Control.Monad                        ( forM_ )
 import qualified Control.Exception          as E
 import Data.Time.Clock.POSIX                ( getCurrentTime )
 import Database.PostgreSQL.Simple as PG     ( ConnectInfo(..),
@@ -22,8 +21,6 @@ import Database.PostgreSQL.Simple as PG     ( ConnectInfo(..),
                                               In(..),
                                               Only(..),
                                               {- query -} )
-import Database.PostgreSQL.Simple.FromRow   ( FromRow(..), field )
-import Database.PostgreSQL.Simple.FromField ( FromField )
 import qualified RPGServer.Log              as L
 import qualified RPGServer.World            as W
 -- import qualified Crypto.KDF.PBKDF2          as K
@@ -35,8 +32,7 @@ import RPGServer.DB.Class                   ( AdminDB(..),
 import RPGServer.DB.Postgres.Common         ( PG,
                                               pgE, pgE1,
                                               pgQ, pgQ1,
-                                              Conn(..),
-                                              beginTxn, commitTxn )
+                                              Conn(..) )
 
 
 instance (MonadIO m, L.Log m L.Main) => MakeDB m Conn ConnectInfo where
@@ -84,10 +80,10 @@ instance (MonadIO m, MonadCatch m) => AdminDB (PG m) where
 
 instance (MonadIO m, MonadCatch m) => DriverDB (PG m) where
   createThing n pid = do
-    beginTxn
+--  beginTxn
     tid <- fromOnly <$> pgQ1 sqlT (Only n)
     pgE1 sqlL (tid, pid)
-    commitTxn
+--  commitTxn
     return tid
     where
     sqlT = "insert into world_thing (name) values (?) returning id"
@@ -99,11 +95,18 @@ instance (MonadIO m, MonadCatch m) => DriverDB (PG m) where
          \ values (?, ?, false)"
 
   createCharacter n pid = do
-    beginTxn
+--  beginTxn
     cid <- createThing n pid
     thingToCharacter cid pid
-    commitTxn
+--  commitTxn
     return cid
+
+  destroyCharacter = void . (pgE sql) . replicate 3 where
+    sql = "begin; \
+         \ delete from world_located   where thing_id     = ?; \
+         \ delete from world_character where thing_ptr_id = ?; \
+         \ delete from world_thing     where           id = ?; \
+         \ commit"
 
 
 instance (MonadIO m, MonadCatch m) => PlayDB (PG m) where

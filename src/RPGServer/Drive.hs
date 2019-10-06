@@ -6,8 +6,7 @@
 module RPGServer.Drive ( Dr, Drive(..) ) where
 
 import Prelude                      hiding ( length )
-import RPGServer.Common
-import RPGServer.Util.Text          hiding ( null )
+import Control.Monad.Trans.Except          ( ExceptT )
 import RPGServer.DB.Error                  ( DBError )
 import qualified RPGServer.World           as W
 
@@ -15,7 +14,6 @@ import qualified RPGServer.World           as W
 type Dr  = ExceptT DBError
 
 
-type CID = W.CharacterID
-
 class Monad m => Drive m where
-  spawnCharacter  :: W.ThingName     ->     W.PlaceID    ->    Dr m CID
+  spawnCharacter  :: W.ThingName     ->     W.PlaceID    ->    Dr m W.CID
+  deleteCharacter :: W.CID                               ->    Dr m ()

@@ -11,19 +11,13 @@
 -}
 module RPGServer.DB.Drive where
 
-import RPGServer.Common
-import Control.Monad.Trans.Except               ( withExcept )
-import Data.List                                ( find, delete )
-import RPGServer.Util.Text                      ( strip )
-import RPGServer.Drive                          ( Drive(..), Dr )
+import RPGServer.Drive                          ( Drive(..) )
 import RPGServer.DB.Class                       ( DriverDB(..) )
-import RPGServer.DB.Error                       ( D )
-import qualified RPGServer.World                as W
 
 
 instance (Monad m, DriverDB m) => Drive m where
-
-  spawnCharacter = createCharacter
+  spawnCharacter  = createCharacter
+  deleteCharacter = destroyCharacter
 
 {-
   exit eid = maybe err doExit =<< theExitM where

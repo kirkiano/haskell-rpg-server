@@ -13,7 +13,6 @@ import Control.Concurrent.STM.TQueue        ( newTQueue,
                                               writeTQueue )
 import qualified Data.Map                   as M
 import System.IO                            ( stdout )
-import SendReceive                          ( ReceiveResult(Received) )
 import qualified System.Posix.Signals       as P
 import RPGServer.Util.Fork                  ( )
 import qualified RPGServer.Global           as G
@@ -41,9 +40,9 @@ main = G.getSettings >>= go where
     startup = do
       e     <- runReaderT (runReaderT G.createEnv s) lh
       q     <- atomically newTQueue
-      let dequeue   = Received <$> (liftIO . atomically . readTQueue $ q)
+      let dequeue   = liftIO . atomically . readTQueue $ q
           sPort     = G.tcpPort s
-          toGame x  = liftIO $ atomically $ writeTQueue q x >> return True
+          toGame x  = liftIO $ atomically $ writeTQueue q x
           slst      = S.listen sPort $ driverAction toGame
           frk       = C.forkIO . (G.runG e lh)
       _     <- frk $ evalStateT (gameLoop dequeue) $ LoopState M.empty
