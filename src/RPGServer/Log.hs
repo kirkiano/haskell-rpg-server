@@ -3,6 +3,7 @@
 module RPGServer.Log ( module System.Log,
                        L,
                        Main(..),
+                       DB(..),
                        Connection(..),
                        ConnectionType(..),
                        Transmission(..),
@@ -32,6 +33,9 @@ data Main = AttemptingToConnectToPostgres
           | NoLongerListeningForConnections ConnectionType
           | SocketError String
           deriving Show
+
+
+data DB = DBQuery String deriving Show
 
 
 data ConnectionType = Socket | Websocket

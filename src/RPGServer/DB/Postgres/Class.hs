@@ -14,13 +14,14 @@ import RPGServer.Common
 -- import qualified Data.ByteString            as B
 -- import qualified Data.ByteString.Internal   as B
 import qualified Control.Exception          as E
+import Data.Text                            ( snoc )
 import Data.Time.Clock.POSIX                ( getCurrentTime )
 import Database.PostgreSQL.Simple as PG     ( ConnectInfo(..),
                                               connect,
                                               close,
                                               In(..),
-                                              Only(..),
-                                              {- query -} )
+                                              Only(..) )
+import qualified System.Log                 as L
 import qualified RPGServer.Log              as L
 import qualified RPGServer.World            as W
 -- import qualified Crypto.KDF.PBKDF2          as K
@@ -70,7 +71,7 @@ instance (MonadIO m, L.Log m L.Main) => MakeDB m Conn ConnectInfo where
 --      _             -> Nothing
 
 
-instance (MonadIO m, MonadCatch m) => AdminDB (PG m) where
+instance (MonadIO m, MonadCatch m, L.Log m L.DB) => AdminDB (PG m) where
   markLoggedInSet = void . pgE q . Only . In where
     q = "begin;\
        \ update world_character set is_logged_in = false;\
@@ -78,7 +79,11 @@ instance (MonadIO m, MonadCatch m) => AdminDB (PG m) where
        \ commit"
 
 
-instance (MonadIO m, MonadCatch m) => DriverDB (PG m) where
+instance (MonadIO m, MonadCatch m, L.Log m L.DB) => DriverDB (PG m) where
+  getCIDsByPrefix pf = (map fromOnly <$>) . pgQ sql . Only $ pfp where
+    sql = "select id from world_thing where name like ?"
+    pfp = snoc pf '%'
+
   createThing n pid = do
 --  beginTxn
     tid <- fromOnly <$> pgQ1 sqlT (Only n)
@@ -101,15 +106,18 @@ instance (MonadIO m, MonadCatch m) => DriverDB (PG m) where
 --  commitTxn
     return cid
 
-  destroyCharacter = void . (pgE sql) . replicate 3 where
+  destroyCharacters []   = return []
+  destroyCharacters cids = do void . (pgE sql) . replicate 3 $ (In cids)
+                              return cids
+    where
     sql = "begin; \
-         \ delete from world_located   where thing_id     = ?; \
-         \ delete from world_character where thing_ptr_id = ?; \
-         \ delete from world_thing     where           id = ?; \
+         \ delete from world_located   where thing_id     in ?; \
+         \ delete from world_character where thing_ptr_id in ?; \
+         \ delete from world_thing     where           id in ?; \
          \ commit"
 
 
-instance (MonadIO m, MonadCatch m) => PlayDB (PG m) where
+instance (MonadIO m, MonadCatch m, L.Log m L.DB) => PlayDB (PG m) where
 
   loginCharacter b cid = pgE1 sql (b, cid) where
     sql = "update world_character set is_logged_in = ? where thing_ptr_id = ?"

@@ -11,10 +11,10 @@ import Control.Monad.Trans.Reader           ( ReaderT,
                                               asks,
                                               runReaderT )
 import Control.Monad.IO.Class               ( MonadIO )
+import qualified System.Log                 as L
 import System.IO                            ( stdout )
 import qualified Options.Applicative        as O
 import Data.Semigroup                       ((<>))
-import qualified System.Log                 as L
 import qualified Database.PostgreSQL.Simple as PG
 
 
@@ -38,7 +38,7 @@ instance Show Settings where
 ------------------------------------------------------------
 
 data Subsettings = Subsettings {
-  debug       :: Bool,
+  _verbosity  :: Int,
   _tcpPort    :: Int,
   _saveUtt    :: Bool
 }
@@ -46,10 +46,12 @@ data Subsettings = Subsettings {
 
 getSubsettings :: O.Parser Subsettings
 getSubsettings = Subsettings
-                 <$> O.switch
-                 ( O.long "debug"
-                   <> O.short 'd'
-                   <> O.help "run in debug mode, generating more output" )
+                 <$> O.option O.auto
+                 ( O.long "verbosity"
+                   <> O.short 'v'
+                   <> O.help "level of logging verbosity (0 thru 8)"
+                   <> O.value 6
+                   <> O.showDefault )
                  <*> O.option O.auto
                  ( O.long "tcpport"
                    <> O.short 'p'
@@ -67,16 +69,16 @@ getSubsettings = Subsettings
 
 
 getSettings :: IO Settings
-getSettings = O.execParser opts >>= ss2s where
+getSettings = ss2s <$> O.execParser opts where
   opts = O.info (getSubsettings O.<**> O.helper)
          ( O.fullDesc
            <> O.progDesc "RPG Server"
            <> O.header "rpg - a text-based RPG" )
 
 
-ss2s :: Subsettings -> IO Settings
-ss2s s = return $ Settings {
-  logThresh         = if (debug s) then L.Debug else L.Info,
+ss2s :: Subsettings -> Settings
+ss2s s = Settings {
+  logThresh         = toEnum $ _verbosity s,
   tcpPort           = _tcpPort s,
   pgSettings        = pg,
   saveUtterances    = _saveUtt s

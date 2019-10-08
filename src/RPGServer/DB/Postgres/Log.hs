@@ -26,6 +26,7 @@ instance (Monad m, L.LogThreshold m) => L.LogThreshold (PG m) where
 
 instance (MonadIO m,
           MonadCatch m,
+          L.Log m L.DB,
           L.Log m L.Connection) => L.Log (PG m) L.Connection where
   logWrite lev (L.AcceptedConnection d s) = logConnection lev d $ Just s
   logWrite lev (L.ConnectionClosed d r) = logConnection lev d $ Just r
@@ -48,7 +49,7 @@ instance L.Log m L.Game => L.Log (PG m) L.Game where
   logWrite lev = lift . (L.logWrite lev)
 
 
-logConnection :: (MonadIO m, MonadCatch m) =>
+logConnection :: (MonadIO m, MonadCatch m, L.Log m L.DB) =>
                  L.Level ->
                  L.ConnectionType ->
                  Maybe String ->
@@ -82,7 +83,7 @@ instance ToField L.Level where
 
 -----------------------------------------------------------
 
-insertSingle :: (MonadIO m, MonadCatch m, Show q, ToRow q)
+insertSingle :: (MonadIO m, MonadCatch m, L.Log m L.DB, Show q, ToRow q)
                 =>
                 Query -> q -> PG m ()
 insertSingle sql prms = runExceptT (pgE1 sql prms) >>= either bad return where

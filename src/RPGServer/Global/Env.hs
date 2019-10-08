@@ -82,7 +82,8 @@ instance DriverDB G where
   createThing         = undefined
   thingToCharacter    = undefined
   createCharacter n   = mapExceptT (withReaderT dBase) . (createCharacter n)
-  destroyCharacter    = mapExceptT (withReaderT dBase) . destroyCharacter
+  destroyCharacters   = mapExceptT (withReaderT dBase) . destroyCharacters
+  getCIDsByPrefix     = mapExceptT (withReaderT dBase) . getCIDsByPrefix
 
 
 instance PlayDB G where

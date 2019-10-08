@@ -41,8 +41,10 @@ class Monad m => PlayDB m where
 
 
 class PlayDB m => DriverDB m where
-  createThing          :: W.ThingName   -> W.PlaceID     -> D m TID
-  thingToCharacter     :: TID           -> W.PlaceID     -> D m ()
-  createCharacter      :: W.ThingName   -> W.PlaceID     -> D m W.CID
+  getCIDsByPrefix       :: W.ThingName                    -> D m [W.CID]
 
-  destroyCharacter     :: W.CID                          -> D m ()
+  createThing           :: W.ThingName   -> W.PlaceID     -> D m TID
+  thingToCharacter      :: TID           -> W.PlaceID     -> D m ()
+  createCharacter       :: W.ThingName   -> W.PlaceID     -> D m W.CID
+
+  destroyCharacters     :: [W.CID]                        -> D m [W.CID]

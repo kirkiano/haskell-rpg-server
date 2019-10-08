@@ -25,8 +25,11 @@ import Database.PostgreSQL.Simple        ( begin,
                                            execute,
                                            FromRow,
                                            Query,
+                                           formatQuery,
                                            query,
                                            ToRow )
+import qualified System.Log              as L
+import qualified RPGServer.Log           as L
 import RPGServer.DB.Error                ( D, DBError(..) )
 
 
@@ -46,6 +49,13 @@ type PG m = ReaderT Conn m
 getDB :: Monad m => PG m Connection
 getDB = asks _db
 
+showQuery :: (MonadIO m, ToRow q) => Query -> q -> PG m String
+showQuery sql params = do c <- getDB
+                          liftIO $ show <$> formatQuery c sql params
+
+logQuery :: (MonadIO m, ToRow q, L.Log m L.DB) => Query -> q -> PG m ()
+logQuery sql params = do s <- showQuery sql params
+                         lift $ L.log L.DebugBytes $ L.DBQuery s
 
 beginTxn :: MonadIO m => D (PG m) ()
 beginTxn = lift $ liftIO . begin =<< getDB
@@ -57,10 +67,12 @@ commitTxn = lift $ liftIO . commit =<< getDB
 -- queries
 
 pgQ :: (MonadIO m,
+        L.Log m L.DB,
         Show p,
         ToRow p,
         FromRow r) => Query -> p -> D (PG m) [r]
 pgQ sql params = do
+  lift $ logQuery sql params
   db <- lift getDB
   let q        = query db sql params
       handle e = return $ Left $ InternalError $ show (e :: SomeException)
@@ -69,6 +81,7 @@ pgQ sql params = do
 
 -- query that should return a single row
 pgQ1 :: (MonadIO m,
+         L.Log m L.DB,
          Show q,
          ToRow q,
          FromRow r) => Query -> q -> D (PG m) r
@@ -83,8 +96,12 @@ expectSingleton _   = throwE NotSingleton
 -----------------------------------------------------------
 -- updates
 
-pgE :: (MonadIO m, MonadCatch m, Show q, ToRow q) => Query -> q -> D (PG m) Int
+pgE :: (MonadIO m, MonadCatch m,
+        L.Log m L.DB,
+        Show q, ToRow q)
+        => Query -> q -> D (PG m) Int
 pgE sql params = do
+  lift $ logQuery sql params
   db <- lift getDB
   let q        = fromIntegral . toInteger <$> (liftIO $ execute db sql params)
       handle e = return $ Left $ InternalError $ show (e :: SomeException)
@@ -92,13 +109,14 @@ pgE sql params = do
 
 
 -- update that should affect a single row
-pgE1 :: (MonadIO m, MonadCatch m, Show q, ToRow q) => Query -> q -> D (PG m) ()
+pgE1 :: (MonadIO m, MonadCatch m,
+         L.Log m L.DB,
+         Show q, ToRow q)
+         => Query -> q -> D (PG m) ()
 pgE1 q params = pgE q params >>= expectSingle
 
 
--- Surely there's some sugar out there for "ExceptT . return . Right / Left"?
--- The old eitherT package defined them as "left / right" (lowercase).
 expectSingle :: MonadIO m => Int -> D (PG m) ()
-expectSingle 1 = ExceptT $ return $ Right ()
-expectSingle 0 = ExceptT $ return $ Left NoUpdate
-expectSingle _ = ExceptT $ return $ Left MultipleUpdate
+expectSingle 1 = except $ Right ()
+expectSingle 0 = except $ Left NoUpdate
+expectSingle _ = except $ Left MultipleUpdate

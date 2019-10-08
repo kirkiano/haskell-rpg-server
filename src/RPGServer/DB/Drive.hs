@@ -16,8 +16,9 @@ import RPGServer.DB.Class                       ( DriverDB(..) )
 
 
 instance (Monad m, DriverDB m) => Drive m where
-  spawnCharacter  = createCharacter
-  deleteCharacter = destroyCharacter
+  getCharactersByPrefix = getCIDsByPrefix
+  spawnCharacter        = createCharacter
+  deleteCharacters      = destroyCharacters
 
 {-
   exit eid = maybe err doExit =<< theExitM where

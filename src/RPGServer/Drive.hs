@@ -15,5 +15,6 @@ type Dr  = ExceptT DBError
 
 
 class Monad m => Drive m where
-  spawnCharacter  :: W.ThingName     ->     W.PlaceID    ->    Dr m W.CID
-  deleteCharacter :: W.CID                               ->    Dr m ()
+  getCharactersByPrefix  ::  W.ThingName                        ->  Dr m [W.CID]
+  spawnCharacter         ::  W.ThingName    ->     W.PlaceID    ->  Dr m  W.CID
+  deleteCharacters       :: [W.CID]                             ->  Dr m [W.CID]
