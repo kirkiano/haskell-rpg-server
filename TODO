@@ -10,3 +10,4 @@
 * Clean up Connection.hs.
 * Implement one of the driver modules in Prolog.
 * Look into use of mzero for (Nothing, []) in gameloop / respond.
+* Strongly typed IDs: ExitID (EID), CharacterID (CID), PlaceID (PID), ThingID (TID), etc.
