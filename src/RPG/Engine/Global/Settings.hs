@@ -1,21 +1,17 @@
-{-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE TupleSections,
-             MultiParamTypeClasses,
-             FlexibleInstances #-}
 
-module RPGServer.Global.Settings ( Settings(..),
+module RPG.Engine.Global.Settings ( Settings(..),
                                    getSettings ) where
 
-import RPGServer.Common
-import Control.Monad.Trans.Reader           ( ReaderT,
-                                              asks,
-                                              runReaderT )
-import Control.Monad.IO.Class               ( MonadIO )
-import qualified System.Log                 as L
-import System.IO                            ( stdout )
-import qualified Options.Applicative        as O
-import Data.Semigroup                       ((<>))
-import qualified Database.PostgreSQL.Simple as PG
+import RPG.Engine.Common
+import Control.Monad.Trans.Reader              ( ReaderT,
+                                                 asks,
+                                                 runReaderT )
+import Control.Monad.IO.Class                  ( MonadIO )
+import System.IO                               ( stdout )
+import qualified System.Log                    as L
+import qualified Options.Applicative           as O
+import Data.Semigroup                          ( (<>) )
+import qualified Database.PostgreSQL.Simple    as PG
 
 
 data Settings = Settings {

@@ -1,25 +1,20 @@
-{-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE TupleSections,
-             FlexibleContexts #-}
 
-module RPGServer.Listen.Driver ( driverAction ) where
+module RPG.Engine.Listen.Driver ( driverAction ) where
 
-import RPGServer.Common
-import Control.Monad.Trans.Except              ( catchE )
-import qualified Data.Set                      as S
-import qualified System.Log                    as L
-import RPGServer.Util.Fork                     ( HasFork )
-import qualified RPGServer.Log                 as L
-import qualified SendReceive                   as SR
-import RPGServer.Request                       ( Request(..),
-                                                 PlayerRequest(..))
-import RPGServer.Message                       ( Message(..) )
-import RPGServer.DB.Class                      ( PlayDB )
+import RPG.Engine.Common
+import Control.Monad.Trans.Except               ( catchE )
+import qualified Data.Set                       as S
+import qualified System.Log                     as L
+-- import RPG.Engine.Util.Fork                     ( HasFork )
+import qualified RPG.Engine.Log                 as L
+import qualified SendReceive                    as SR
+import RPG.Request                              ( Request(..),
+                                                  PlayerRequest(..))
+import RPG.Message                              ( Message(..) )
 
 
 driverAction :: (MonadIO m,
-                 HasFork m,
-                 PlayDB m,
+--                 HasFork m,
                  SR.WaitReceiveFrom a m Request,
                  SR.SendTo a m Message,
                  SR.Disconnect m a,
@@ -34,7 +29,7 @@ driverAction sendToGameLoop driver = void . runExceptT . loop $ S.empty where
       lift $ sendToGameLoop (q, sendDriver)
       loop cids1
     dismiss e = lift $ do -- driver gone, so dismiss it & shut down active cids
-      SR.disconnect driver $ Just $ show e
+      SR.disconnect driver . Just . show $ e
       mapM_ (sendToGameLoop . (, sendDriver) . (flip PlayerRequest Quit)) cids0
     updateCids (PlayerRequest cid Join) = do logReg True  cid
                                              return $ S.insert cid cids0
@@ -44,5 +39,3 @@ driverAction sendToGameLoop driver = void . runExceptT . loop $ S.empty where
     logReg isReg = L.log L.Info . ctor where
       ctor = if isReg then L.RegisteringPlayer else L.DeregisteringPlayer
   sendDriver = void . runExceptT . (SR.send driver)
-
-

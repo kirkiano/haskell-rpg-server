@@ -1,24 +1,22 @@
-{-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 
-module RPGServer.Log ( module System.Log,
-                       L,
-                       Main(..),
-                       DB(..),
-                       Connection(..),
-                       ConnectionType(..),
-                       Transmission(..),
-                       Game(..),
-                       Drive(..),
-                       SendingFunction(..),
-                       General(..)) where
+module RPG.Engine.Log ( module System.Log,
+                        L,
+                        Main(..),
+                        Connection(..),
+                        ConnectionType(..),
+--                        Transmission(..),
+                        Game(..),
+                        Drive(..),
+                        SendingFunction(..),
+                        General(..)) where
 
-import RPGServer.Common
+import RPG.Engine.Common
 import System.Log
-import System.IO                      ( Handle )
-import RPGServer.Util.ByteString
-import RPGServer.Request              ( Request )
-import RPGServer.Event                ( Event )
-import qualified RPGServer.World      as W
+import System.IO                       ( Handle )
+-- import RPG.Util.ByteString
+import RPG.Request                     ( Request )
+import RPG.Event                       ( Event )
+import RPG.World
 
 
 type L = ReaderT (Level, Handle) IO
@@ -35,9 +33,6 @@ data Main = AttemptingToConnectToPostgres
           deriving Show
 
 
-data DB = DBQuery String deriving Show
-
-
 data ConnectionType = Socket | Websocket
                     deriving Show
 
@@ -49,17 +44,17 @@ data Connection = AcceptedConnection ConnectionType String
                 | ConnectionClosed ConnectionType ClosureReason
                 deriving Show
 
-
+{-
 data Transmission = SentToHost ConnectionType ByteString
                   | CannotSendToHost ConnectionType (Maybe String)
                   | WaitingToReceive ConnectionType String
                   | ReceivedFromHost ConnectionType ByteString
                   | CannotReceiveFromHost ConnectionType (Maybe String)
                   deriving Show
+-}
 
-
-data Drive = RegisteringPlayer W.CID
-           | DeregisteringPlayer W.CID
+data Drive = RegisteringPlayer CharID
+           | DeregisteringPlayer CharID
            deriving Show
 
 
@@ -69,9 +64,9 @@ data SendingFunction = AddingSendingFunction
                      deriving Show
 
 
-data Game = SendingFunction SendingFunction W.CID
+data Game = SendingFunction SendingFunction CharID
           | ProcessingRequest Request
-          | EmittingEvent Event [W.CID]
+          | EmittingEvent Event [CharID]
           deriving Show
 
 

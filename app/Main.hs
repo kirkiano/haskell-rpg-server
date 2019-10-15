@@ -4,7 +4,7 @@
              OverloadedStrings #-}
 module Main ( main ) where
 
-import RPGServer.Common
+import RPG.Engine.Common
 import Control.Monad.Trans.State            ( evalStateT )
 import qualified Control.Concurrent         as C
 import Control.Concurrent.STM               ( atomically )
@@ -14,11 +14,11 @@ import Control.Concurrent.STM.TQueue        ( newTQueue,
 import qualified Data.Map                   as M
 import System.IO                            ( stdout )
 import qualified System.Posix.Signals       as P
-import RPGServer.Util.Fork                  ( )
-import qualified RPGServer.Global           as G
-import qualified RPGServer.Listen.Socket    as S
-import RPGServer.Listen.Driver              ( driverAction )
-import RPGServer.Game.Loop                  ( gameLoop,
+-- import RPGServer.Util.Fork                  ( )
+import qualified RPG.Engine.Global           as G
+import qualified RPG.Engine.Listen.Socket    as S
+import RPG.Engine.Listen.Driver              ( driverAction )
+import RPG.Engine.Game.Loop                  ( gameLoop,
                                               LoopState(LoopState) )
 
 
@@ -38,8 +38,8 @@ main = G.getSettings >>= go where
   go s = print s >> putStrLn "" >> bracket startup (shutdown s) queryUser where
     lh      = (G.logThresh s, stdout)
     startup = do
-      e     <- runReaderT (runReaderT G.createEnv s) lh
-      q     <- atomically newTQueue
+      Right e <- runReaderT (runReaderT (runExceptT G.createEnv) s) lh
+      q       <- atomically newTQueue
       let dequeue   = liftIO . atomically . readTQueue $ q
           sPort     = G.tcpPort s
           toGame x  = liftIO $ atomically $ writeTQueue q x

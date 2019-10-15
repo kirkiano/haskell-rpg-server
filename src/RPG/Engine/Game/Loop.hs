@@ -1,34 +1,25 @@
-{-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE NumericUnderscores,
-             TupleSections,
-             TypeSynonymInstances,
-             FlexibleInstances,
-             MultiParamTypeClasses,
-             FlexibleContexts #-}
 
-module RPGServer.Game.Loop ( gameLoop,
-                             LoopState(LoopState) ) where
+module RPG.Engine.Game.Loop ( gameLoop,
+                              LoopState(LoopState) ) where
 
-import RPGServer.Common           hiding ( say, handle )
-import Control.Monad.Trans.State         ( StateT, gets, put )
-import qualified Data.Map                as M
-import qualified System.Log              as L
-import qualified RPGServer.Log           as L
-import RPGServer.World                   ( CID )
-import RPGServer.Player                  ( Player(Player) )
-import RPGServer.Message                 ( Message(..),
-                                           PlayerMessage(..), )
-import RPGServer.Request                 ( Request(..),
-                                           PlayerRequest(Join, Quit))
-import RPGServer.DB.Class                ( DriverDB, PlayDB )
-import RPGServer.DB.Play                 ( )
-import RPGServer.DB.Drive                ( )
-import RPGServer.Game.Play               ( play )
-import RPGServer.Game.Drive              ( drive )
+import RPG.Engine.Common           hiding ( say, handle )
+import Control.Monad.Trans.State          ( StateT, gets, put )
+import qualified Data.Map                 as M
+import qualified System.Log               as L
+import qualified RPG.Engine.Log           as L
+import RPG.World                          ( CharID )
+import RPG.Engine.Player                  ( Player(Player) )
+import RPG.Message                        ( Message(..),
+                                            PlayerMessage(..), )
+import RPG.Request                        ( Request(..),
+                                            PlayerRequest(Join, Quit))
+import RPG.Engine.Game.Play               ( play )
+import RPG.Engine.Game.Drive              ( drive )
+import RPG.DB                             ( Db )
 
 
 data LoopState m = LoopState {
-  _smap :: M.Map CID (PlayerMessage -> m ())
+  _smap :: M.Map CharID (PlayerMessage -> m ())
 }
 
 type L m = StateT (LoopState m) m
@@ -43,7 +34,7 @@ instance L.Log m a => L.Log (L m) a where
 -----------------------------------------------------------
 
 gameLoop :: (MonadIO m,
-             DriverDB m, -- DriverDB implies PlayDB
+             Db m,
              L.Log m L.Game,
              L.Log m Request,
              L.Log m Message)
@@ -51,7 +42,9 @@ gameLoop :: (MonadIO m,
             m (Request, Message -> m ()) -> L m ()
 gameLoop nextRequest = forever $ lift nextRequest >>= handle where
 
-  handle p = lift (L.log L.Debug $ L.ProcessingRequest $ fst p) >> process p
+  handle p = do lift (L.log L.Debug . L.ProcessingRequest . fst $ p)
+                process p
+                return ()
 
   process (PlayerRequest cid pq, sm) = processPlayerRequest cid pq sm
   process (q, sendMsg)               = lift $ do
@@ -60,8 +53,8 @@ gameLoop nextRequest = forever $ lift nextRequest >>= handle where
     sendMsg msg
 
 
-processPlayerRequest :: (MonadIO m, PlayDB m, L.Log m L.Game) =>
-                        CID -> PlayerRequest -> (Message -> m ()) -> L m ()
+processPlayerRequest :: (MonadIO m, Db m, L.Log m L.Game) =>
+                        CharID -> PlayerRequest -> (Message -> m ()) -> L m ()
 processPlayerRequest cid pq sendMsg = either err ok =<< playIt where
   playIt         = lift $ runReaderT (runExceptT $ play pq) $ Player cid
   ok             = (updateSendMap pq cid sendPlayer >>) . emit
@@ -74,7 +67,8 @@ processPlayerRequest cid pq sendMsg = either err ok =<< playIt where
     report = lift . void . sendPlayer . ValueMessage
 
 
-sendCharacter :: (MonadIO m, L.Log m L.Game) => PlayerMessage -> CID -> L m ()
+sendCharacter :: (MonadIO m, L.Log m L.Game) =>
+                 PlayerMessage -> CharID -> L m ()
 sendCharacter msg cid = gets _smap >>= (maybe fatal sendOK . (M.lookup cid))
   where fatal         = lg $ L.SendingFunction L.NoSendingFunction cid
         lg            = L.log L.Critical
@@ -84,7 +78,7 @@ sendCharacter msg cid = gets _smap >>= (maybe fatal sendOK . (M.lookup cid))
 updateSendMap :: (MonadIO m, L.Log m L.Game)
                  =>
                  PlayerRequest ->
-                 CID ->
+                 CharID ->
                  (PlayerMessage -> m ()) ->
                  L m ()
 updateSendMap q cid sendPlayer = do
@@ -100,5 +94,5 @@ updateSendMap q cid sendPlayer = do
 
 
 logMsgLevel :: Message -> L.Level
-logMsgLevel (Error _) = L.Info
-logMsgLevel _         = L.Debug
+logMsgLevel (Error _ _) = L.Info
+logMsgLevel _           = L.Debug

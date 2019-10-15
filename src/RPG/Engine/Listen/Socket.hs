@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
+{- OPTIONS_GHC -fno-warn-orphans -}
 {-# LANGUAGE OverloadedStrings,
              RankNTypes,
              UndecidableInstances,
@@ -6,18 +6,18 @@
              FlexibleContexts,
              MultiParamTypeClasses #-}
 
-module RPGServer.Listen.Socket ( listen,
-                                 getMyIPAddr ) where
+module RPG.Engine.Listen.Socket ( listen,
+                                  getMyIPAddr ) where
 
-import RPGServer.Common
-import Control.Concurrent                    ( forkIO )
-import qualified RPGServer.Log               as L
-import qualified Network.Socket              as N
-import qualified SendReceive                 as SR
-import SendReceive.UTF8Handle                ( )
-import RPGServer.Request                     ( Request )
-import RPGServer.Message                     ( Message(..) )
-import qualified RPGServer.Global.Env        as G
+import RPG.Engine.Common
+import Control.Concurrent                     ( forkIO )
+import qualified RPG.Engine.Log               as L
+import qualified Network.Socket               as N
+import qualified SendReceive                  as SR
+import SendReceive.UTF8Handle                 ( )
+import RPG.Request                            ( Request )
+import RPG.Message                            ( Message(..) )
+import qualified RPG.Engine.Global.Env        as G
 
 
 class (Show a,
