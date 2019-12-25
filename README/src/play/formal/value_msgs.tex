@@ -1,0 +1,15 @@
+The value messages that a player can receive from the game as
+responses to his or her requests are as follows:
+\begin{itemize}
+\item \youarevalset. An element of this set, which is tagged by the
+  constant \youaretg, is sent in response to a \whoamireqset\ request:
+\[ \youarevalset \equiv \{ \youaretg \} \times \charnameset \]
+\item \placevalset. An element of this set, which is tagged by the
+  constant \placetg, is sent in response to a
+  \whereamireqset\ request:
+\[ \placevalset \equiv \{ \placetg \} \times \placenameset \]
+\end{itemize}
+The set of all possible values is the union of the above sets:
+\begin{equation}
+  \valset \equiv \youarevalset ~\disjunion~ \placevalset
+\end{equation}

@@ -1,0 +1,19 @@
+The events that a character receives from the game are as follows:
+\begin{itemize}
+\item An element of the following set signifies that a character has
+  entered a place:
+  \[ \enteredevtset \equiv \{ \enteredtg \} \times \charidset \times
+  \charnameset \times \exitidset \]
+  $(\enteredtg, ci, cn, ei )$ means that character $ci$, named $cn$,
+  has just entered through exit $ei$.
+\item An element of the following set signifies that a character has
+  exited a place:
+  \[ \exitedevtset \equiv \{ \exitedtg \} \times \charidset \times
+  \exitidset \]
+  $(\exitedtg, ci, ei )$ means that character $ci$
+  has just exited through exit $ei$.
+\end{itemize}
+The set of all possible events is the union of the above sets:
+\begin{equation}
+  \evtset \equiv \enteredevtset ~\disjunion~ \exitedevtset
+\end{equation}
