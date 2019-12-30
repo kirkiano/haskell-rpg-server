@@ -1,0 +1,79 @@
+\bgroup
+\def\arraystretch{1.5}
+\begin{table}
+  \centering
+{\footnotesize
+  \begin{tabular}{|l|c|l|l|}
+    \hline
+    {\em set name} &
+    {\em set definition} &
+    {\em example} &
+    {\em meaning}
+    \\ \hline \hline
+
+      \whoamireqset &
+      $\{ \whoamitg \}$ &
+      \whoamitg &
+      What is my name and description?
+      \\ \hline
+
+      \whereamireqset &
+      $\{ \whereamitg \}$ &
+      \whereamitg &
+      Where am I?
+      \\ \hline
+
+      \whatisherereqset &
+      $\{ \whatisheretg \}$ &
+      \whatisheretg &
+      What things are in this place?
+      \\ \hline
+
+      \whoisherereqset &
+      $\{ \whoisheretg \}$ &
+      \whoisheretg &
+      Which other characters are in this place?
+      \\ \hline
+
+      \lookthingreqset{\sigma}{c} &
+      $\{ \lookthingtg \} \times \cocontents{\sigma}{c}$ &
+      $(\lookthingtg, t)$ &
+      Describe thing $t$.
+      \\ \hline
+
+      \lookcharreqset{\sigma}{c} &
+      $\{ \lookchartg \} \times \cooccupants{\sigma}{c}$ &
+      $(\lookchartg, c)$ &
+      Describe character $c$.
+      \\ \hline
+
+      \sayreqset &
+      $\{ \saytg \} \times \speechset$ &
+      $(\saytg, s)$ &
+      Say $s$ out loud.
+      \\ \hline
+
+      \exitreqset{\sigma}{c} &
+      $\{ \exittg \} \times \charexits{\sigma}{c}$ &
+      $(\exittg, e)$ &
+      Take exit $e$.
+      \\ \hline
+
+      \editmereqset &
+      $\{ \editmetg \} \times \descset$ &
+      $(\editmetg, d)$ &
+      Change my description to $d$.
+      \\ \hline
+
+      \quitreqset &
+      $\{ \quittg \}$ &
+      $\quittg$ &
+      Log me out of the game.
+      \\ \hline
+
+\end{tabular}
+} % font size
+  \caption{\label{tab:Requests}Requests valid for character $c$ in
+  state $\sigma$.}
+\end{table}
+\egroup

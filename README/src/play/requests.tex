@@ -1,0 +1,17 @@
+Given a state $\sigma \in \Sigma$, the various requests that a
+ character $c \in \charset{\sigma}$ can make are shown
+ in \tabref{Requests}. Their union forms the set of valid requests for
+ $c$ in $\sigma$:
+\begin{align*}
+  \reqset{\sigma}{c} \equiv \whoamireqset
+  ~\disjunion~ & \whereamireqset
+  ~\disjunion~ \whatisherereqset
+  ~\disjunion~ \whoisherereqset \\
+  ~\disjunion~ & \lookthingreqset{\sigma}{c}
+  ~\disjunion~ \lookcharreqset{\sigma}{c}
+  ~\disjunion~ \sayreqset \\
+  ~\disjunion~ & \editmereqset
+  ~\disjunion~ \exitreqset{\sigma}{c}
+  ~\disjunion~ \quitreqset
+\end{align*}
+\input{play/requests_table}

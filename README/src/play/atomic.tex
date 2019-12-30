@@ -1,0 +1,65 @@
+% This paragraph gives IMPLEMENTATION DETAILS. Move it there.
+%
+%% The atomic values occurring in the game are of course drawn from
+%% natural numbers, character strings, and the like. But to type them
+%% strongly they are tagged with certain constants, shown in monotype
+%% font (\eg, \tg{ThisIsAConstant}).
+
+\tabref{AtomicValues} shows the various sets of atomic values. They
+will be used below.
+\bgroup
+\def\arraystretch{1.5}
+\begin{table}
+  \centering
+  \begin{tabular}{|l|l|}
+    \hline
+    {\em set name} & {\em meaning}\\ \hline \hline
+%   \idset & see text & Unique identifiers \\ \hline
+    \dirset & Directions in space \\ \hline
+%    \nameset & Names \\ \hline
+%    \descset & Descriptions \\ \hline
+%   \placeidset & $ \{ \placetg \} \times \idset$ & Place IDs \\ \hline
+    \placenameset & Place names \\ \hline
+    \placedescset & Place descriptions \\ \hline
+%   \thingidset & $\{ \thingtg \} \times \idset$ & Thing IDs \\ \hline
+    \thingnameset & Thing names \\ \hline
+    \thingdescset & Thing descriptions \\ \hline
+%   \charidset & $\{ \chartg \} \times \idset$ & Character IDs\\ \hline
+    \charnameset & Character names \\ \hline
+    \chardescset & Character descriptions \\ \hline
+    \speechset & Utterances \\ \hline
+  \end{tabular}
+  \caption{\label{tab:AtomicValues}Atomic values}
+\end{table}
+\egroup
+Additional details:
+\begin{itemize}
+%\item \idset\ is a set of infinitely many distinct
+%identifiers. Apart from equality, no ordering or other properties are
+%required of it.
+\item \descset\ is the set of all character strings.
+\item \speechset\ is the set of all character strings.
+\item \nameset\ is the set of all character strings each of which:
+  \begin{itemize}
+  \item is at least 1 and at most 64 characters long,
+  \item contains only alphanumeric characters or spaces,
+  \item contains no space that is not preceded and followed by an
+    alphanumeric character, and
+  \item is case-insensitive
+  \end{itemize}
+\item \dirset\ is defined as:
+  \begin{align*}
+    \dirset \equiv \{~&
+  \tg{Up},
+  && \tg{Down}, \\
+  & \tg{North},
+  && \tg{South},
+  && \tg{East},
+  && \tg{West}, \\
+  & \tg{Northeast},
+  && \tg{Northwest},
+  && \tg{Southeast},
+  && \tg{Southwest}
+  ~\}
+  \end{align*}
+\end{itemize}

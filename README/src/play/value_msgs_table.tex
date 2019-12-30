@@ -1,0 +1,56 @@
+\bgroup
+\def\arraystretch{1.5}
+\begin{table}
+  \centering
+{\scriptsize
+  \begin{tabular}{|l|c|c|l|}
+    \hline
+    {\em set name} & {\em set definition} & {\em example} & {\em
+  meaning}\\ \hline \hline
+  
+    \youarevalset &
+    $\{ \youaretg \} \times \charnameset \times \chardescset $ &
+    $(\youaretg, n, d)$ &
+    \begin{cellpage}{0.2}
+    Your name is $n$ and your description is~$d$.\end{cellpage}
+    \\ \hline
+
+    \placevalset &
+    $\{ \placetg \} \times \placenameset$ &
+    $(\placetg, n, d)$ &
+    Your location is called $n$ and has description $d$.
+    \\ \hline
+  
+    \placethingsvalset &
+    $\{ \placethingstg \} \times \powset{\thingset{} \times \thingnameset}$
+    &
+    $(\placethingstg, \nullset)$ & % \{ (tid_1, tn_1), \ldots, (tid_n, tn_n)\})$
+    These are the things at your location.
+    \\ \hline
+  
+    \placecharsvalset &
+    $\{ \placecharstg \} \times \powset{\charset{} \times \charnameset}$
+    &
+    $(\placecharstg, \nullset)$ &
+    These are the (other) characters at your location.
+    \\ \hline
+  
+    \thingvalset &
+    $\{ \thingtg \} \times \thingset{} \times \thingdescset$
+    &
+    $(\thingtg, t, d)$ &
+    Thing $t$ has description $d$.
+    \\ \hline
+  
+    \charvalset &
+    $\{ \chartg \} \times \charset{} \times \chardescset$
+    &
+    $(\chartg, c, d)$ &
+    Character $c$ has description $d$.
+    \\ \hline
+  
+  \end{tabular}
+  \caption{\label{tab:ValueMessages}Value messages for characters}
+  } % font size
+\end{table}
+\egroup

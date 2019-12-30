@@ -1,0 +1,30 @@
+\bgroup
+\def\arraystretch{1.5}
+\begin{table}
+  \centering
+  \begin{tabular}{|l|l|l|}
+    \hline
+    {\em set} & {\em meaning}\\ \hline \hline
+    \addressset & addresses \\ \hline
+    \placeset & places \\ \hline
+    \thingset & inanimate things \\ \hline
+    \speechset & utterances \\ \hline
+    \placenameset & $\{ \placetg \} \times \nameset$ & Place names
+    \\ \hline
+    \placedescset & $\{ \placetg \} \times \descset$ & Place
+  descriptions
+    \\ \hline
+    \thingnameset & $\{ \thingtg \} \times \nameset$ & Thing names
+    \\ \hline
+    \thingdescset & $\{ \thingtg \} \times \descset$ & Thing descriptions
+    \\ \hline
+    \charidset & $\{ \chartg \} \times \idset$ & Character IDs\\ \hline
+    \charnameset & $\{ \chartg \} \times \nameset$ & Character
+    names \\ \hline
+    \chardescset & $\{ \chartg \} \times \descset$ & Character
+  descriptions
+    \\ \hline
+  \end{tabular}
+  \caption{\label{tab:WorldElements}Game world elements}
+\end{table}
+\egroup

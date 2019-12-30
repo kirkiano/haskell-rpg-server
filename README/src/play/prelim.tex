@@ -1,0 +1,31 @@
+We settle a few points of notation before proceeding. The power set of
+a set $S$ is denoted \powset{S}.  The domain and codomain of a
+function $f: A \rightarrow B$ are respectively denoted
+\begin{align*}
+  \domain{f} & = A\\
+  \codomain{f} & = B
+\end{align*}
+An injective function $f$ is denoted $f: A \inj B$,
+a surjective one $f: A \surj B$.
+
+We freely use currying, uncurrying, and partial application. For
+example, if $f: A \times B \rightarrow C$, then we sometimes use the
+same letter $f$ to denote the curried function $f: A \rightarrow
+B \rightarrow C$, and vice versa.
+
+The null value is denoted by \nothingsym, and for any set $S$ we define
+$\ornothing{S} \equiv S \cup \{\nothingsym\}$. The notation $f: D
+\rightarrow \ornothing{R}$ means that the function $f$ is partial on
+$D$. A function $f: A \inj \ornothing{B}$ is to be understood as
+injective only on $f^{-1}(B)$ (unless $ \nothingsym \in B$). Similarly,
+$g: A \surj \ornothing{B}$ is to be understood as surjective only on
+$g^{-1}(B)$ (unless $\nothingsym \in B$).  Unless noted otherwise, all
+functions are strict in \nothingsym.
+
+The {\em singleton operator} wraps an element of a set:
+\[ \singletonopsym{A}: \,A \inj \powset{A}, ~~~~~~~~~~
+\singletonop{A}{x} \equiv \{ x \} \]
+And it is convenient to define the {\em membership relation}
+restricted to a set $A$:
+\[ \memopsym{A} = \{ (x, S) ~|~ \{ x \} \subseteq S ~~\text{and}~~ \{
+x \} \subseteq A \} \]

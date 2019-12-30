@@ -1,0 +1,15 @@
+An {\em event} is a significant occurrence in the game. How events are
+triggered by characters' requests, and which characters get notified
+of the events, are explained in \secref{play:dynamics}.
+\tabref{Events} shows the various sets of events. Their union forms
+the set of all possible events:
+\begin{align}
+  \evtset \equiv \joinedevtset
+  ~\disjunion~ & \disjoinedevtset
+  ~\disjunion~ \exitedevtset
+  ~\disjunion~ \enteredevtset
+  ~\disjunion~ \chareditedevtset \\ \nonumber
+  & ~\disjunion~ \lookedcharevtset ~\disjunion~ \lookedthingevtset
+  ~\disjunion~ \saidevtset
+\end{align}
+\input{play/events_table}

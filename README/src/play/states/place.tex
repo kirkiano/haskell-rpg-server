@@ -1,0 +1,30 @@
+A {\em place} is the game's smallest geographical unit; it is similar
+to a chat room. The set of all possible places is denoted \placeset{},
+and for each $\sigma \in \Sigma$ we define the set
+\[ \placeset{\sigma} \subset \placeset{} \]
+of places valid (\ie, present) in~$\sigma$.
+The following families of
+state functions define the properties of a place.
+
+%% The subset of places valid (\ie, present) in a state is given
+%% by
+%% \[ \placessym:~ \Sigma \rightarrow \powset{\placeset} \]
+A place {\em may} be a part of an address:
+\[ \placeaddresssym{\sigma}: \placeset{\sigma} \surj \ornothing{\addressset{\sigma}} \]
+Surjectivity here reflects the rule that each address
+must have at least one place assigned to it.
+The name of a place is given by\footnote{The actual implementation
+does not require uniqueness of place names, but of the combination of
+a place's name and its address, if any.}
+\[ \placenamesym{\sigma}:~ \placeset{\sigma} \inj \placenameset\]
+and its (not necessarily unique) description is given by
+\[ \placedescsym{\sigma}:~\placeset{\sigma} \rightarrow \placedescset \]
+%% Both must be defined for all valid places:
+%% \begin{align*}
+%% \forall \sigma, pid
+%% ~.~~ & \placename{\sigma}{pid} = \nothing & ~~~~\text{iff}~~~~ &
+%% pid \not\in \placeids{\sigma} \\
+%% \forall \sigma, pid
+%% ~.~~ & \placedesc{\sigma}{pid} = \nothing & ~~~~\text{iff}~~~~ &
+%% pid \not\in \placeids{\sigma}
+%% \end{align*}

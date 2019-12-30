@@ -1,0 +1,72 @@
+\bgroup
+\def\arraystretch{1.5}
+\begin{table}
+  \centering
+{\footnotesize
+  \begin{tabular}{|l|c|l|l|l|}
+    \hline
+    {\em set name} & {\em set definition} & {\em
+      example} & {\em meaning}\\ \hline \hline
+    
+    \joinedevtset &
+    $\{ \joinedtg \} \times \charset{}$ &
+    $(\joinedtg, c)$ &
+    \begin{cellpage}{0.2} Character $c$ has joined the game.\end{cellpage}
+    \\ \hline
+    
+    \disjoinedevtset &
+    $\{ \disjoinedtg \} \times \charset{}$ &
+    $(\disjoinedtg, c)$ &
+    Character $c$ has quit the game. \\ \hline
+  
+    \enteredevtset &
+    $\{ \enteredtg \} \times \charset{} \times \exitset{}$ &
+    $(\enteredtg, c, e)$ &
+    \begin{cellpage}{0.2}
+      Character $c$ has entered via exit $e$.
+    \end{cellpage}
+    \\ \hline
+
+    \exitedevtset &
+    $\{ \exitedtg \} \times \charset{} \times \exitset{}$ &
+    $(\exitedtg, c, e)$ &
+    \begin{cellpage}{0.2}
+      Character $c$ has exited via exit $e$.
+    \end{cellpage}
+    \\ \hline
+
+    \chareditedevtset &
+    $\{ \chareditedtg \} \times \charset{}$ &
+    $(\chareditedtg, c)$ &
+    \begin{cellpage}{0.2}
+      Description of character $c$ has changed.
+    \end{cellpage}
+    \\ \hline
+
+    \lookedcharevtset &
+    $\{ \lookedchartg \} \times \charset{} \times \charset{}$ &
+    $(\lookedchartg, c_1, c_2)$ &
+    \begin{cellpage}{0.2}
+      Character $c_1$ looked at character $c_2$.
+    \end{cellpage}
+    \\ \hline
+
+    \lookedthingevtset &
+    $\{ \lookedthingtg \} \times \charset{} \times \thingset{}$ &
+    $(\lookedthingtg, c, t)$ &
+    \begin{cellpage}{0.2}
+      Character $c$ looked at thing $t$.
+    \end{cellpage}
+    \\ \hline
+
+    \saidevtset &
+    $\{ \saidtg \} \times \charset{} \times \speechset$ &
+    $(\saidtg, c, s)$ &
+    Character $c$ said $s$.
+    \\ \hline
+
+  \end{tabular}
+} % font size
+  \caption{\label{tab:Events}Game events}
+\end{table}
+\egroup

@@ -1,0 +1,40 @@
+A {\em thing} is an inanimate object in the game.
+The set of all possible things is denoted \thingset{},
+and for each $\sigma \in \Sigma$ we define the set
+\[ \thingset{\sigma} \subset \thingset{} \]
+of things valid (\ie, present) in~$\sigma$.
+
+The following families of
+state functions define the properties of a thing.
+%% The following state functions define the properties of things. The
+%% subset of valid thing IDs is given by
+%% \[ \thingidssym:~ \Sigma \rightarrow \powset{\thingidset} \]
+The name of a thing is given by
+\[ \thingnamesym{\sigma}:~ \thingset{\sigma} \inj \thingnameset \]
+and its (not necessarily unique) description is given by
+\[ \thingdescsym{\sigma}:~ \thingset{\sigma} \rightarrow \thingdescset \]
+%% Both must be defined on all valid things:
+%% \begin{align*}
+%% \forall \sigma, tid
+%% ~.~~ & \thingname{\sigma}{tid} = \nothing & ~~~~\text{iff}~~~~ &
+%% tid \not\in \thingids{\sigma} \\
+%% \forall \sigma, tid
+%% ~.~~ & \thingdesc{\sigma}{tid} = \nothing & ~~~~\text{iff}~~~~ &
+%% tid \not\in \thingids{\sigma}
+%% \end{align*}
+All things must be placed somewhere:
+\[ \thingplacesym{\sigma}:~ \thingset{\sigma} \rightarrow \placeset{\sigma} \]
+The (inanimate) contents of a given place are given by
+\[ \placethingssym{\sigma}:~ \placeset{\sigma} \rightarrowtail
+\powset{\thingset{\sigma}} \]
+%% which must be defined on all valid places:
+%% \[ \forall \sigma, pid
+%%   ~.~~ \placethingids{\sigma}{pid} = \nothingsym ~~~~\text{iff}~~~~ pid
+%% \not\in \placeids{\sigma} \]
+Consistency requires:
+\begin{align*}
+  \forall \sigma &~.~~
+  \thingplacesym{\sigma} \circ \placethingssym{\sigma} ~=~ \singletonopsym{\placeset{\sigma}} \\
+  \forall \sigma &~.~~
+  \placethingssym{\sigma} \circ \thingplacesym{\sigma} ~=~ \memopsym{\thingset{\sigma}}
+\end{align*}

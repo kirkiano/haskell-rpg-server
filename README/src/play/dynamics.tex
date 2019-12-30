@@ -1,0 +1,126 @@
+In a given state $\sigma \in \Sigma$, the effect of a request from
+character $c \in \charset{\sigma}$ might be:
+\begin{itemize}
+\item[i)] to mutate the game's state,
+\item[ii)] to return a value to character $c$,
+\item[iii)] to generate an event, of which certain characters should
+  be notified,
+\end{itemize}
+or all of the above. Accordingly, the semantics of play for $c$ in
+$\sigma$ are defined by the function\footnote{We use semantic
+  double-brackets even though the argument of \playsym{\sigma}{c} is
+  not concrete syntax.}
+\[ \playsym{\sigma}{c}: \reqset{\sigma}{c} \rightarrow
+~~\Sigma \times \ornothing{\valset} \times \powset{\evtset
+  \times \powset{\charset{}}}
+\]
+The following subsections define the play function
+$\playsym{\sigma}{c}$ on the
+various subsets of requests. For brevity, state functions unchanged by
+a request are elided (\ie, we write down a state function only if a
+request's action changes it). We also omit quantifiers (\eg, $\forall$).
+
+\subsubsection{Who Am I}
+\begin{align*}
+  \play{\sigma}{c}{\whoamitg} = \playret{\sigma}{v}{\nullset}, ~~~~~\text{where}~v =
+  (\youaretg, \charname{\sigma}{c})
+\end{align*}
+
+\subsubsection{Where Am I}
+\begin{align*}
+  \play{\sigma}{c}{\whereamitg} = \playret{\sigma}{v}{\nullset}, ~~~~~\text{where}~v =
+  (\placetg, \coplacename{\sigma}{c}, \coplacedesc{\sigma}{c})
+\end{align*}
+
+\subsubsection{What Is Here}
+\[  \play{\sigma}{c}{\whatisheretg} =
+\playret{\sigma}{v}{\nullset} \]
+where
+\begin{align*}
+  v &= (\placethingstg, \kappa) \\
+  \kappa & = \{ (t, tn) ~|~ t \in
+  \cocontents{\sigma}{c} ~~\text{and}~~tn = \thingname{\sigma}{t})\}
+\end{align*}
+
+\subsubsection{Who Is Here}
+\[ \play{\sigma}{c}{\whoisheretg} = \playret{\sigma}{v}{\nullset} \]
+where
+\begin{eqnarray*}
+  v &=& (\placecharstg, \omega) \\
+  \omega &=& \{ (c', cn') ~|~ c' \in \cooccupants{\sigma}{c}
+  - \{ c \} ~~\text{and}~~ cn' = \charname{\sigma}{c'}\}
+\end{eqnarray*}
+
+\subsubsection{Look at Something}
+\begin{align*}
+  \play{\sigma}{c}{(\lookthingtg, t)} &=
+  \playret{\sigma}{v}{\{(\tau, \rho)\}},\\
+  ~~~~~\text{where}~v &= (\thingtg, t, \thingdesc{\sigma}{t}) \\
+  \tau & = (\lookedthingtg, c, t) \\
+  \rho & = \cooccupants{\sigma}{c} - \{ c \}
+\end{align*}
+
+\subsubsection{Look at Someone}
+\begin{align*}
+  \play{\sigma}{c}{(\lookchartg, c')} &=
+  \playret{\sigma}{v}{\{(\tau, \rho)\}},\\
+  ~~~~~\text{where}~v &= (\chartg, c', \chardesc{\sigma}{c'}) \\
+  \tau & = (\lookedchartg, c, c') \\
+  \rho & = \cooccupants{\sigma}{c} - \{ c \}
+\end{align*}
+
+\subsubsection{Take an Exit}
+\begin{align*}
+  \play{\sigma}{c}{(\exittg, e)} &=
+  \playret{\sigma'}{\nothingsym}{\{(\tau_1, \rho_1), (\tau_2,
+    \rho_2)\}},\\
+  ~~~~~\text{where}~\tau_1 & = (\enteredtg, c, e) \\
+  \rho_1 & = \cooccupants{\sigma'}{c} \\
+  \tau_2 & = (\exitedtg, c, e) \\
+  \rho_2 & = \cooccupants{\sigma}{c} \\
+  \charplace{\sigma'}{c'} &=
+  \begin{cases}
+    \exitdst{\sigma}{e} , & \text{if}~ c' = c \\
+    \charplace{\sigma}{c'}, & \text{otherwise}
+  \end{cases} \\
+  \placechars{\sigma'}{p} &=
+  \begin{cases}
+    \placechars{\sigma}{p} - \{ c \}, & \text{if}~ p =
+    \exitsrc{\sigma}{e} \\
+    \placechars{\sigma}{p} \cup \{ c \}, & \text{if}~ p =
+    \exitdst{\sigma}{e} \\
+    \placechars{\sigma}{p}, & \text{otherwise}
+  \end{cases}
+\end{align*}
+
+\subsubsection{Change of description}
+\begin{align*}
+  \play{\sigma}{c}{(\editmetg, d)} =
+  \playret{\sigma'}{\nothingsym}{\{ (\tau, \rho) \}}\\
+  ~~~~\text{where}~~~~
+  \chardesc{\sigma'}{c'} &=
+  \begin{cases}
+    d, & \text{if}~c' = c \\
+    \chardesc{\sigma}{c'}, & \text{otherwise}
+  \end{cases} \\
+  \tau & = (\chareditedtg, c) \\
+  \rho & = \cooccupants{\sigma}{c}
+\end{align*}
+
+
+%% Changes from a
+%% state $\sigma_1$ to another state $\sigma_2$ will be described
+%% informally.\footnote{For example, to define rigorously how the name of
+%%   the character with $cid$ should be changed to $n$, we might
+%%   introduce a function $\fn{ChangeName}: \Sigma \times \charidset
+%%   \times \charnameset \rightarrow \Sigma$ and define it as
+%% \[
+%%   \fn{ChangeName}(\sigma, cid, n) = \sigma' ~~~~\text{where}~~~~
+%%   \begin{cases}
+%%     \textsc{Cname}(\sigma', cid'), & \text{if}~cid' \neq
+%%     \mathit{cid} \\
+%%     n, & \text{otherwise}
+%%   \end{cases}
+%% \]
+%% This is more formalism than we need.}
+

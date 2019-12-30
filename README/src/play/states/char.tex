@@ -1,0 +1,82 @@
+A {\em character} is a player of the game, either live or automated.
+The set of all possible characters is denoted \charset{},
+and for each $\sigma \in \Sigma$ we define the set
+\[ \charset{\sigma} \subset \charset{} \]
+of characters valid (\ie, present) in~$\sigma$.
+
+The following families of
+state functions define the properties of a character.
+The name of a character is given by
+\[ \charnamesym{\sigma}:~ \charset{\sigma} \inj \charnameset \]
+and its (not necessarily unique) description is given by
+\[ \chardescsym{\sigma}:~ \charset{\sigma} \rightarrow \chardescset \]
+All characters must be placed somewhere:
+\[ \charplacesym{\sigma}:~ \charset{\sigma} \rightarrow \placeset{\sigma} \]
+The (inanimate) contents of a given place are given by
+\[ \placecharssym{\sigma}:~ \placeset{\sigma} \rightarrowtail
+\powset{\charset{\sigma}} \]
+Finally, consistency requires:
+\begin{align*}
+  \forall \sigma &~.~~
+  \charplacesym{\sigma} \circ \placecharssym{\sigma} ~=~ \singletonopsym{\placeset{\sigma}} \\
+  \forall \sigma &~.~~
+  \placecharssym{\sigma} \circ \charplacesym{\sigma} ~=~ \memopsym{\charset{\sigma}}
+\end{align*}
+We also define the following helper functions:
+\begin{itemize}
+\item
+$\coplacenamesym{\sigma}:~ \charset{\sigma} \rightarrow \placenameset$,
+defined by \[\coplacenamesym{\sigma}
+= \placenamesym{\sigma} \circ \charplacesym{\sigma} \]
+\item
+$\coplacedescsym{\sigma}:~ \charset{\sigma} \rightarrow \placedescset$,
+defined by \[\coplacedescsym{\sigma}
+= \placedescsym{\sigma} \circ \charplacesym{\sigma} \]
+\item $\cocontentssym{\sigma}:~ \charset{\sigma} \rightarrow
+  \powset{\thingset{\sigma}}$, defined by
+  \[\cocontentssym{\sigma} = \placethingssym{\sigma} \circ \charplacesym{\sigma}\]
+\item $\cooccupantssym{\sigma}:~ \charset{\sigma} \rightarrow
+  \powset{\charset{\sigma}}$, defined by
+  \[\cooccupantssym{\sigma} = \placecharssym{\sigma} \circ \charplacesym{\sigma}\]
+where the computed set includes the input argument. That is, $\forall
+  \sigma, c ~.~~c \in \cooccupants{\sigma}{c}$.
+\end{itemize}
+
+%% The following state functions define the properties of characters. The
+%% subset of valid character IDs is given by
+%% \[ \charidssym:~ \Sigma \rightarrow \powset{\charidset} \]
+%% The name of a char is given by
+%% \[ \charnamesym:~
+%% \Sigma \rightarrow \charidset \rightarrowtail \charnameset_\nothing\]
+%% and its (not necessarily unique) description is given by
+%% \[ \chardescsym:~
+%%  \Sigma \rightarrow \charidset \rightarrow \chardescset_\nothing \]
+%% Both must be defined on all valid characters:
+%% \begin{align*}
+%% \forall \sigma, tid
+%% ~.~~ & \charname{\sigma}{tid} = \nothing & ~~~~\text{iff}~~~~ &
+%% tid \not\in \charids{\sigma} \\
+%% \forall \sigma, tid
+%% ~.~~ & \chardesc{\sigma}{tid} = \nothing & ~~~~\text{iff}~~~~ &
+%% tid \not\in \charids{\sigma}
+%% \end{align*}
+%% The location of a character is given by
+%% \[ \charplaceidsym:~ \Sigma \rightarrow \charidset \rightarrow \placeidset_\nothing \]
+%% All characters must be placed somewhere:
+%% \[ \forall \sigma, tid
+%% ~.~~ \charplaceid{\sigma}{tid} = \nothing ~~~~\text{iff}~~~~
+%% tid \not\in \charids{\sigma} \]
+%% The (inanimate) contents of a given place are given by
+%% \[ \placecharidssym:~ \Sigma \rightarrow \placeidset \rightarrowtail
+%% \powset{\charidset}_\nothing \]
+%% which must be defined on all valid places:
+%% \[ \forall \sigma, pid
+%%   ~.~~ \placecharids{\sigma}{pid} = \nothing ~~~~\text{iff}~~~~ pid
+%% \not\in \placeids{\sigma} \]
+%% Finally, consistency requires:
+%% \begin{align*}
+%%   \forall \sigma, pid &~.~~
+%%   \charplaceid{\sigma}{\placecharids{\sigma}{pid})} = \{ pid \} \\
+%%   \forall \sigma, tid &~.~~
+%%   tid \in \placecharids{\sigma}{\charplaceid{\sigma}{tid}}
+%% \end{align*}

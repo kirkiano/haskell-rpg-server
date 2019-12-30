@@ -1,0 +1,14 @@
+In addition to receiving notifications of events, a character will
+receive a {\em value message} for each of its requests for
+data, as explained in \secref{play:dynamics}.
+\tabref{ValueMessages} shows the various sets of value messages;
+their union forms the set of all possible value messages:
+\begin{align}
+  \valset \equiv \youarevalset
+  ~\disjunion~ \placevalset
+  ~\disjunion~ \placethingsvalset
+  ~\disjunion~ \placecharsvalset
+  ~\disjunion~ \thingvalset
+  ~\disjunion~ \charvalset
+\end{align}
+\input{play/value_msgs_table}

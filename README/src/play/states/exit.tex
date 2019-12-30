@@ -1,0 +1,52 @@
+An {\em exit} is a way out of a place into an adjoing place.
+The set of all possible exits is denoted \exitset{},
+and for each $\sigma \in \Sigma$ we define the set
+\[ \exitset{\sigma} \subset \exitset{} \]
+of characters valid (\ie, present) in~$\sigma$.
+
+The following families of
+state functions define the properties of an exit.
+The {\em source} and {\em destination} of an exit are given
+respectively by
+\begin{align*}
+\exitsrcsym{\sigma}:~ \exitset{\sigma} \rightarrow \placeset{\sigma} \\
+\exitdstsym{\sigma}:~ \exitset{\sigma} \rightarrow \placeset{\sigma}
+\end{align*}
+Places are allowed to have no ingress or egress, thus:
+\begin{align*}
+\forall \sigma \in \Sigma
+~.~~ & \exitsrcsym{\sigma}(\exitset{\sigma}) ~\subseteq~ \placeset{\sigma} \\
+\forall \sigma \in \Sigma
+~.~~ & \exitdstsym{\sigma}(\exitset{\sigma}) ~\subseteq~ \placeset{\sigma}
+\end{align*}
+The set of exits by which a place may be left is given by
+\[ \placeexitssym{\sigma}: \placeset{\sigma} \inj
+\powset{\exitset{\sigma}},
+~~~~~~~~~\placeexitssym{\sigma} \equiv \exitsrcsym{\sigma}^{-1} \]
+%% It is defined only on valid places,
+%% \[ \forall \sigma \in \Sigma
+%% ~.~~ \placeexitidssym(\sigma)(\compl{\placeids{\sigma}}) ~=~ \{ \nothing \} \]
+%% and must take valid values:
+Exits are edges in the directed multigraph of places, \ie, for every
+exit there is a place to whose exits it belongs.
+\[ \forall \sigma \in \Sigma
+~.~~ \placeexits{\sigma}{\placeset{\sigma}} ~=~ \exitset{\sigma}
+\]
+Consistency obviously requires that an exit belong to the exits of its
+source:\footnote{Spelled out: $\forall e \in \exitset{\sigma}~.~~
+  e \in \placeexits{\sigma}{\exitsrc{\sigma}{e}}$.}
+\[ \forall \sigma \in \Sigma ~.~~ \placeexitssym{\sigma} \circ
+\exitsrcsym{\sigma} = \,\in_{\exitset{\sigma}} \]
+and that a place be the sole source of its exits:\footnote{Spelled
+  out: $\forall p \in \placeset{\sigma}~.~~
+  \exitsrc{\sigma}{\placeexits{\sigma}{eid}} = \{ pid \}$.}
+\[
+\forall \sigma \in \Sigma ~.~~ 
+\exitsrcsym{\sigma} \circ \placeexitssym{\sigma}
+  = \singletonopsym{\placeset{\sigma}}
+\]
+For convenience we defined the composition:
+\begin{align*}
+& \charexitssym{\sigma}:~ \charset{\sigma} \rightarrow \powset{\exitset{\sigma}} \\
+& \charexitssym{\sigma} \equiv \placeexitssym{\sigma} \circ \charplacesym{\sigma}
+\end{align*}
