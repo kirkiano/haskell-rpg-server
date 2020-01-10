@@ -1,0 +1,23 @@
+
+Communication is serialized in JSON\@. The objects defined
+in \secref{play} obviously involve redundancy of types. For
+example, to have defined \youarevalset\ as
+$\{ \youaretg \} \times \nameset $, eliding the technically
+unnecessary constant \charnametg, would have produced serializations
+that are leaner. But we have opted against such premature optimization
+of payload size, at least for now, because stronger typing helps
+prevent errors during {\em de}serialization.
+
+%% For example, if a character wishes to say ``Good morning'' to other
+%% characters in the same place, it constructs an element of
+%% \sayreqset (a subtype of \reqset) that
+%% holds the string ``Good morning,'' and sends it to the server.  The
+%% corresponding client thread pairs the request with this client's
+%% unique ID, and pushes the pair onto the game loop's in-queue.  The
+%% game loop eventually pops the request off and, seeing that it is of
+%% type \sayreqset, it~queries the database for the set of characters
+%% within ``earshot'' of the requesting client (\ie, those occupying the
+%% same place).  It~then constructs an instance of the
+%% \saidevtset\ type (a subtype of \evtset).
+%% To forward this message to the other characters, it uses their sending
+%% functions, which it looks up in its internal dictionary.

@@ -2,9 +2,9 @@ In a given state $\sigma \in \Sigma$, the effect of a request from
 character $c \in \charset{\sigma}$ might be:
 \begin{itemize}
 \item[i)] to mutate the game's state,
-\item[ii)] to return a value to character $c$,
-\item[iii)] to generate an event, of which certain characters should
-  be notified,
+\item[ii)] to send $c$ a value message,
+\item[iii)] to generate an event, of which $c$ and possibly other
+characters should be notified,
 \end{itemize}
 or all of the above. Accordingly, the semantics of play for $c$ in
 $\sigma$ are defined by the function\footnote{We use semantic
