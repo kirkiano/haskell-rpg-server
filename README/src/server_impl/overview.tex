@@ -12,7 +12,12 @@ of a low-level language such as C, at least for most kinds of
 computation, though it does
 \footlink{outperform the JVM}
 {https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/haskell.html}
-on several measures.
+on several measures.\footnote{A distributed stream processor such
+as Kafka (\url{https://kafka.apache.org/powered-by})
+stores all events and hence uses too much disk space.}
+The possibility of using other languages or runtimes 
+is discussed further in \S\ref{subsec:future:impl}.
+
 
 The overall requirements of the engine include:
 \begin{itemize}
@@ -38,20 +43,13 @@ reading or writing the database if necessary, and uses the sending
 functions to send the requesting character any resulting values and to
 send event notifications to other characters appropriately, as defined
 in \secref{play:dynamics}. The game loop does not, and should not,
-know how requests are put onto its queue.  Nor should it know how
-sending functions work. Requests are pushed onto the game queue by
-client threads, as discussed below. To ensure consistency, these
-clients should not be given access to the database or the
-sending functions.\footnote{Otherwise the client actions would
-have to be made into critical sections, and the idiomatic way to
-attempt this in Haskell would be to try somehow to embed database
-calls in the STM monad. But this monad works by retrying, so it would
-end up repeating calls to the database, making the approach
-inefficient.}
-
-We note here in passing that we rule out the use of a distributed
-stream processor such
-as \footlink{Kafka}{https://kafka.apache.org/powered-by}, if only
-because its storage of all events would for our purposes require too
-much disk space.  The possibility of using other languages or runtimes
-is discussed further in \S\ref{subsec:future:impl}.
+know how requests are put onto its queue; nor should it know how
+sending functions work. As discussed below, requests are pushed onto
+the game queue by client threads, which for consistency should not be
+given access to the database or the sending
+functions.\footnote{Otherwise the client actions would have to be made
+into critical sections, and the idiomatic way to attempt this in
+Haskell would be to try somehow to embed database calls in the STM
+monad. But this monad works by retrying, so even if the approach were
+made feasible it would end up repeating calls to the database, making
+it inefficient.}

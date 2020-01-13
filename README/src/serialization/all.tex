@@ -21,3 +21,9 @@ prevent errors during {\em de}serialization.
 %% \saidevtset\ type (a subtype of \evtset).
 %% To forward this message to the other characters, it uses their sending
 %% functions, which it looks up in its internal dictionary.
+
+If JSON should ever become a bottleneck, the option to communicate in
+raw binary can be added to the game engine.\footnote{But if
+communication is dominated by long strings of text then this will not
+bring a big improvement, because in strings there is already a roughly
+one-to-one correspondence between character and byte.}

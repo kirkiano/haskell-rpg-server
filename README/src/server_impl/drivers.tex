@@ -1,64 +1,58 @@
-The game engine must of course accept game requests from clients and push them
-onto the game loop's queue.
-In principle the engine could allot one socket per playing character.
-But this design would not scale up well enough.
-If for example the implementation assigned each socket connection its own
-thread, then it would lose time context-switching between them.
-And even if it avoided threads in favor of an event loop (as envisioned in
-\S\ref{subsec:future:impl}), the design would still use up too many kernel
-resources.\footnote{According to
+The game engine must of course accept game requests from clients and
+must push them onto the game loop's queue. This multiplexing could in
+principle be done at the OS level, by allotting one network socket per
+playing character (whether it represents a live person or a NPC).  But
+this design would not scale up well enough.  If for example the
+implementation assigned each socket connection its own thread,
+it~would lose time context-switching between them.  And even if the
+design used an event loop instead of threads (as envisioned in
+\S\ref{subsec:future:impl}), a socket per character would still
+use up too many kernel resources.\footnote{According to
 \url{https://stackoverflow.com/questions/8646190/how-much-memory-is-consumed-by-the-linux-kernel-per-tcp-ip-network-connection},
 1000 NPCs would need on the order of 0.5~GB of RAM just to hold the kernel
 structures associated with the TCP connections.}
-In addition, since the engine would have to authenticate the new connection
-before admitting it to the game, the client's character would first have to
-exist in the database.
-Thus clients could not spawn new characters.
+%% THIS IS OUT OF PLACE HERE.
+%% In addition, since the engine would have to authenticate the new connection
+%% before admitting it to the game, the client's character would first have to
+%% exist in the database.
+%% Thus clients could not spawn new characters.
 
-For these reasons the game engine does not allow individual characters to
-connect to the game engine directly.
-Instead it allows itself to be {\em driven} by other applications, each of
-which it trusts without authentication, and to each of which it allots one
-socket connection.
-These other applications are called \newterm{drivers}.
-A~driver is authorized to spawn characters, endows them with goals and
-behaviors, and multiplexes the messaging between them and the game engine.
-Thus it acts as a proxy for its many characters, which contribute to game play.
+For these reasons the game engine does not allow individual characters
+to connect directly. Instead it accepts socket connections from a
+small number of trusted secondary applications
+called \newterm{drivers}, each of which acts as proxy for multiple
+characters. The one driver that the game needs at a bare minimum is
+the \newterm{live driver}. Its job is to accept TCP connections from
+clients across the Internet (representing live persons or bots),
+authenticate them, and thereafter proxy the messaging between them and
+the game engine. NPCs are added to the game by additional drivers,
+which it authorizes to spawn them without authentication.
 
-The game needs at least two drivers.
-One of them accepts TCP connections from clients across the Internet,
-authenticates them, and of course thereafter proxies the messaging between them
-and the game engine.
-This driver, which does not spawn new characters, is called the \newterm{live
-driver}, and is the way in which live players join the game.
-As for NPCs, they are spawned by one or more other drivers, which of
-course do not need to authenticate them.
+%% OUT OF PLACE HERE
+%% The NPCs added can be of any kind.
+%% They may for example be ``sleep-sweepers'' which roam the world and
+%% return any sleeping character (derelict player) to its home, so as not to
+%% litter the world with unresponsive characters.
+%% Or it might supply a taxi service, assuming the notion of cars were already
+%% implemented.
+%% More interesting possibilities are mentioned in \S\ref{subsec:future:play}.
 
-A driver can augment the game with elements and NPCs of any kind.
-It might for example supply ``sleep-sweepers,'' NPCs that roam the world and
-return any sleeping character (derelict player) to its home, so as not to
-litter the world with unresponsive characters.
-Or it might supply a taxi service, assuming the notion of cars were already
-implemented.
-More interesting possibilities are mentioned in \S\ref{subsec:future:play}.
+It is important that characters interact only via the game engine, and
+not by direct connection between or within the drivers themselves. For
+example, supposing the game allowed characters to punch each other, if
+a driver decides to make one of its characters punch another one, the
+driver must not take on the work of simulating the punch. Rather it
+must send the game engine a request representing the punch, and it
+cannot conclude that the punch happened until it receives confirmation
+from the game engine, in the form of an event notification. In short
+a driver must act only as proxy and perhaps also as strategist for its
+NPCs. Actual happenings are the responsibility of the game engine
+alone.
 
-It is important that NPCs interact only via the game engine.
-If, for example, the game engine allows characters to punch each other,
-and if a driver decides to make one of its NPCs punch another, the driver
-must not try to simulate the punch internally.
-Rather it must send the game engine a request representing the punch, and it
-cannot conclude that the punch happened until it receives confirmation from the
-game engine, in the form of a server message.
+Drivers can obviously be implemented in different programming
+languages, and since
+\footlink{actors}{https://en.wikipedia.org/wiki/Actor\_model} can be used
+for character threads, a driver might fittingly be
+implemented in Erlang, Actix, or Akka.\footnote{But Akka is apparently
+quite slow. See \url{http://www.techempower.com/benchmarks/}.}
 
-The connection between driver and engine should carry JSON for now.
-If and when it becomes a bottleneck, an alternative TCP port can be opened for
-the same purpose but communicating in raw binary.
-(But if communication is dominated by long strings of text then this will not
-bring a big improvement, because in strings there is already a roughly
-one-to-one correspondence between character and byte.)
-A driver therefore presents an opportunity for polyglottism.
-And since
-\footlink{actors}{https://en.wikipedia.org/wiki/Actor\_model} can be used to
-model NPCs, a driver might be fittingly implemented in Erlang, Actix,
-or Akka, though Akka is apparently
-\footlink{quite slow}{http://www.techempower.com/benchmarks/}.
