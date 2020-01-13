@@ -1,66 +1,57 @@
-The game engine is implemented in Haskell and imports helper libraries from
-other repos.
-The advantages of Haskell include
-garbage collection, green threads, strict immutability, algebraic data types,
-type inference, a parametric type system that includes ad hoc polymorphism plus
-constraints, lazy evaluation and equational reasoning, a surpassingly terse
-and elegant syntax, libraries rich in convenient abstractions, and, of course,
-portability.
-The disadvantages of Haskell include the lags of
-garbage collection, the profligate use of memory by a lazy
-language, and an inability to match the speeds of a low-level language such as
-C, at least for most kinds of computation (though Haskell does do
-\footlink{better than the JVM}
+The game engine is implemented in Haskell,\footnote{It also imports
+RPG-specific helper libraries written in Haskell.} the advantages of
+which include garbage collection, green threads, immutability of
+variables, algebraic data types, type inference, a parametric type
+system that includes ad hoc polymorphism plus constraints, lazy
+evaluation and the consequent equational reasoning, a terse and
+elegant syntax, a large number of convenient libraries, and of
+course portability. The disadvantages of Haskell include the lags of
+garbage collection, the high consumption of memory
+characteristic of lazy languages, and an inability to match the speeds
+of a low-level language such as C, at least for most kinds of
+computation, though it does
+\footlink{outperform the JVM}
 {https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/haskell.html}
-on several measures).
+on several measures.
 
-The engine has two overall requirements:
+The overall requirements of the engine include:
 \begin{itemize}
     \item {\em Multiplexing.} It must multiplex incoming game requests and
     linearize them in some order.
-    \item {\em Consistency.} It must apply them to the state of the game,
-    in the same order.
-    In the case of requests that ask for changes of state, this not only
-    means that updates to the database should happen in the same order,
-    but also that event notifications informing other players of the
-    update also be sent out in the same order.
+    \item {\em Event generation.} It must generate events
+    corresponding to updates to the database.
+    \item {\em Communication.} It must send notifications of those events
+    to the appropriate characters.
+    \item {\em Consistency.} It must send those notifications in the
+    order of the corresponding updates.
 \end{itemize}
 The engine fulfills these requirements by running a game loop in a dedicated
-thread and supplying it with:
+thread. The game loop has:
 \begin{itemize}
-    \item A queue of requests, called the \newterm{game queue}.
+    \item A queue of requests, called the \newterm{game queue};
     \item Exclusive access to the game database;
-    \item {\em Sending functions} that convey to the desired recipients
-    server messages bearing event notifications or requested data values.
+    \item {\em Sending functions} that send event notifications to the
+    appropriate characters.
 \end{itemize}
-On each iteration, the loop pops a request off the queue, services it, hitting
-the database if necessary, and uses the appropriate sending functions to notify
-the appropriate characters of the event that just occurred.
-The game loop does not, and should not, know how requests make it onto its
-queue.
-Nor should it know how sending functions work.
+On each iteration, the loop pops a request off the queue, services it,
+reading or writing the database if necessary, and uses the sending
+functions to send the requesting character any resulting values and to
+send event notifications to other characters appropriately, as defined
+in \secref{play:dynamics}. The game loop does not, and should not,
+know how requests are put onto its queue.  Nor should it know how
+sending functions work. Requests are pushed onto the game queue by
+client threads, as discussed below. To ensure consistency, these
+clients should not be given access to the database or the
+sending functions.\footnote{Otherwise the client actions would
+have to be made into critical sections, and the idiomatic way to
+attempt this in Haskell would be to try somehow to embed database
+calls in the STM monad. But this monad works by retrying, so it would
+end up repeating calls to the database, making the approach
+inefficient.}
 
-Requests are of course pushed onto the queue by client threads, as discussed
-below.
-But here it is important to note that these clients should not be given
-access either to the database or to the sending functions by which server
-messages are conveyed to other clients.
-The reason is that the only way to implement this functionality correctly
-would be to make the client actions into critical sections, so that calls to
-the database and sending functions would be atomic.
-The idiomatic way to achieve this in Haskell
-would be to somehow embed database calls in the `STM` monad.
-But this monad works by attempting retries, so it might easily repeat a
-particular database call any number of times.
-Even if the call were idempotent, this would be unacceptably inefficient.
-For these reasons, the master thread (the one running the game loop) should
-monopolize access to both the database and the messaging mechanisms (sending
-functions).
-In this way can those operations are kept consistent.
-
-We note here in passing that we rule out the use of a distributed stream
-processor such as \footlink{Kafka}{https://kafka.apache.org/powered-by},
-if only because its storage of all events would
-for our purposes require too much disk space.
-The possibility of using other languages and runtimes is discussed further
-in \S\ref{subsec:future:impl}.
+We note here in passing that we rule out the use of a distributed
+stream processor such
+as \footlink{Kafka}{https://kafka.apache.org/powered-by}, if only
+because its storage of all events would for our purposes require too
+much disk space.  The possibility of using other languages or runtimes
+is discussed further in \S\ref{subsec:future:impl}.
