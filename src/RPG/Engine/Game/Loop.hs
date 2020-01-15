@@ -4,6 +4,7 @@ module RPG.Engine.Game.Loop ( gameLoop,
 
 import RPG.Engine.Common           hiding ( say, handle )
 import Control.Monad.Trans.State          ( StateT, gets, put )
+import qualified Data.Set                 as S
 import qualified Data.Map                 as M
 import qualified System.Log               as L
 import qualified RPG.Engine.Log           as L
@@ -60,11 +61,12 @@ processPlayerRequest cid pq sendMsg = either err ok =<< playIt where
   ok             = (updateSendMap pq cid sendPlayer >>) . emit
   err            = lift . void . sendPlayer . PlayerError
   sendPlayer     = sendMsg . (PlayerMessage cid)
-  emit (vM, ers) = forM ers eventsNotify >> maybe (return ()) report vM where
+  emit (vM, ers) = forM eL eventsNotify >> maybe (return ()) report vM where
+    eL                       = S.toList ers
+    report                   = lift . void . sendPlayer . ValueMessage
     eventsNotify (evt, cids) = do
       L.log L.Debug $ L.EmittingEvent evt cids
-      forM cids $ sendCharacter $ EventMessage evt
-    report = lift . void . sendPlayer . ValueMessage
+      forM (S.toList cids) $ sendCharacter $ EventMessage evt
 
 
 sendCharacter :: (MonadIO m, L.Log m L.Game) =>

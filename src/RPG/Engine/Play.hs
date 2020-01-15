@@ -8,7 +8,6 @@ import Control.Monad.Trans.Except           ( withExceptT )
 import qualified Data.Set                   as S
 import Data.Text                            ( Text )
 import Database.CRUD
-import RPG.Common.Id
 import RPG.Common.Has
 import RPG.Engine.Common
 import RPG.Error                            ( RPG,
@@ -33,29 +32,30 @@ myID = lift getCID
 class HasCID m => Play m where
   join :: RPG m ()
 
-  whoAmI :: RPG m (CharID, CharName, CharDescription)
+  whoAmI :: RPG m (IDV CharR, CharDescription)
 
-  myHandle :: RPG m (CharID, CharName)
+  myHandle :: RPG m (IDV CharR)
 
-  whereAmI :: RPG m (PlaceID, PlaceName)
+  whereAmI :: RPG m (IDV PlaceR)
 
-  whatIsHere :: RPG m ([(CharID,  CharName)],
-                       [(ThingID, ThingName)])
+  whatIsHere :: RPG m (S.Set (IDV ThingR))
 
-  whoseIDsAreHere :: RPG m [CharID]
+  whoIsHere :: RPG m (S.Set (IDV CharR))
 
-  exits :: RPG m [(ExitID, PortalName)]
+  exits :: RPG m (S.Set (IDV ExitR))
 
   -- | leave the current place by this exit, and return it, the characters in
   -- | the old place, those in the new place
-  exit :: ExitID -> RPG m (PortalName, PlaceName, [CharID],
-                           [CharID], CharID, CharName, Direction)
+  exit :: ExitID -> RPG m (PortalName, PlaceName,
+                           S.Set CharID,
+                           S.Set CharID,
+                           CharID, CharName, Direction)
 
   -- | if input is nonwhitespace, then say it and return it and hearers
-  say :: Text -> RPG m (Text, [CharID])
+  say :: Text -> RPG m (Text, S.Set CharID)
 
   -- | if input is nonwhitespace, then say it and return it and observers
-  whisper :: Text -> CharID -> RPG m (Text, [CharID])
+  whisper :: Text -> CharID -> RPG m (Text, S.Set CharID)
 
   describeChar :: CharID -> RPG m CharDescription
 
@@ -71,35 +71,27 @@ instance (HasCID m, Db m) => Play m where
   join = ok . update . (, LoggedIn True)  =<< myID
   quit = ok . update . (, LoggedIn False) =<< myID
 
-  whoAmI = ok $ do cid <- myID
-                   (n :: CharName, _ :: LoggedIn) <- lookup cid
-                   d  :: CharDescription          <- lookup cid
-                   return (cid, n, d)
+  whoAmI = ok $ do cid                  <- myID
+                   r :: IDV CharR       <- lookup cid
+                   d :: CharDescription <- lookup cid
+                   return (r, d)
 
-  myHandle = ok $ do cid <- myID
-                     (n :: CharName, _ :: LoggedIn) <- lookup cid
-                     return (cid, n)
+  myHandle = ok $ lookup =<< myID
 
-  whereAmI = ok $ do cid <- myID
+  whereAmI = ok $ do cid               <- myID
                      pid :: PlaceID    <- lookup cid
                      p   :: IDV PlaceR <- lookup pid
-                     pn  :: PlaceName  <- getM p
-                     return (pid, pn)
+                     return p
 
-  whatIsHere = ok $ do cid <- myID
-                       pid :: PlaceID                        <- lookup cid
-                       ts  :: S.Set (IDV ThingR)             <- lookup pid
-                       cs  :: IDM.IDMap (CharName, LoggedIn) <- lookup pid
-                       let f (Id n (cn, _)) = (Id n Chars, cn)
-                           csL = map f $ IDM.toList cs
-                           g t = (getF t :: ThingID, getF t :: ThingName)
-                           tsL = map g $ S.toList ts
-                       return (csL, tsL)
+  whatIsHere = ok $ do cid                        <- myID
+                       pid :: PlaceID             <- lookup cid
+                       ts  :: S.Set (IDV ThingR)  <- lookup pid
+                       return ts
 
-  whoseIDsAreHere = ok $ do cid            <- myID
-                            pid :: PlaceID <- lookup cid
-                            cs  :: IDM.IDMap (CharName, LoggedIn) <- lookup pid
-                            return . map (flip Id Chars) . IDM.keys $ cs
+  whoIsHere = ok $ do cid                    <- myID
+                      pid :: PlaceID         <- lookup cid
+                      cs  :: IDM.IDMap CharR <- lookup pid
+                      return . S.fromList . IDM.toList $ cs
 
   describeChar = ok . lookup
 

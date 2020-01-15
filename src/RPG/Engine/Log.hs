@@ -11,6 +11,7 @@ module RPG.Engine.Log ( module System.Log,
                         General(..)) where
 
 import RPG.Engine.Common
+import Data.Set                        ( Set )
 import System.Log
 import System.IO                       ( Handle )
 -- import RPG.Util.ByteString
@@ -66,7 +67,7 @@ data SendingFunction = AddingSendingFunction
 
 data Game = SendingFunction SendingFunction CharID
           | ProcessingRequest Request
-          | EmittingEvent Event [CharID]
+          | EmittingEvent Event (Set CharID)
           deriving Show
 
 
