@@ -2,19 +2,17 @@
 module RPG.Engine.Game.Play ( play ) where
 
 import qualified Data.Set                   as S
-import RPG.Common.Id
 import RPG.Common.Has                       ( getF )
-import RPG.Engine.Common             hiding ( say )
-import RPG.Request                          ( PlayerRequest(..) )
+import RPG.Request                          ( CharRequest(..) )
 import RPG.Engine.Play                      ( Play(..), myID )
 import RPG.Engine.Game.Result               ( Result )
 import qualified RPG.Value                  as V
 import qualified RPG.Event                  as E
-import RPG.Error                            ( Error )
+import RPG.Error                            ( RPG )
 import RPG.World
 
 
-play :: Play m => PlayerRequest -> ExceptT Error m Result
+play :: Play m => CharRequest -> RPG m Result
 
 play WhoAmI     = do (cr, cdesc) <- whoAmI
                      let cid   :: CharID   = getF cr
@@ -35,37 +33,33 @@ play WhatIsHere = do ts :: S.Set (IDV ThingR) <- whatIsHere
                          v    = V.PlaceContents . S.map f $ ts
                      return (Just v, S.empty)
 
-play WaysOut    = do es :: S.Set (IDV ExitR) <- exits
-                     let f (ei :: IDV ExitR) = (getF ei :: ExitID,
-                                 sourceID      . fromId $ ei,
-                                 destinationID . fromId $ ei,
-                                 portalID      . fromId $ ei,
-                                 direction     . fromId $ ei)
-                         v = V.Exits . S.map f $ es
-                     return (Just v, S.empty)
+play WaysOut    = (, S.empty) . Just . V.Exits <$> exits
 
 play (Exit eid) = do
   (rName, nbrName, oldRecips, newRecips, meID, myName, dir) <- exit eid
   let -- newRecips won't understand what eid refers to (think!), so pass them
       -- instead the names of the exit and the neighboring place
       exited  = E.Exited  meID eid
-      entered = E.Entered meID eid myName
+      entered = E.Entered meID myName rName nbrName dir
       eL      = [(exited,  oldRecips),
                  (entered, newRecips)]
   return (Nothing, S.fromList eL)
 
 play (Say s) = do
-  (ss, ourIDs) <- say s
-  cid          <- myID
-  return (Nothing, S.singleton (E.Said cid ss, ourIDs))
+  (ss, cids) <- say s
+  cid        <- myID
+  let evts = if S.null cids then S.empty else S.singleton (E.Said cid ss, cids)
+  return (Nothing, evts)
 
 play (Whisper s recipID) = do
-  cid            <- myID
-  (ss, otherIDs) <- whisper s recipID
-  let whispr = E.Whispered cid recipID
-      eL     = [(whispr $ Just ss, S.fromList [cid, recipID]),
-                (whispr   Nothing, otherIDs)]
-  return (Nothing, S.fromList eL)
+  cid        <- myID
+  (ss, cids) <- say s -- reuse 'say'
+  let evts   = if S.null cids then S.empty else S.fromList eL
+      eL     = [(whispr $ Just ss, duo),
+                (whispr   Nothing, S.difference cids duo)]
+      whispr = E.Whispered cid recipID
+      duo    = S.fromList [cid, recipID]  
+  return (Nothing, evts)
 
 play (EditMe d) = do
   editMe d

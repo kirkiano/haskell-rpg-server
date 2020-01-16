@@ -1,14 +1,8 @@
-{- OPTIONS_GHC -fno-warn-orphans -}
-{-# LANGUAGE OverloadedStrings,
-             RankNTypes,
-             UndecidableInstances,
-             FlexibleInstances,
-             FlexibleContexts,
-             MultiParamTypeClasses #-}
 
 module RPG.Engine.Listen.Socket ( listen,
                                   getMyIPAddr ) where
 
+import Prelude                         hiding ( drop )
 import RPG.Engine.Common
 import Control.Concurrent                     ( forkIO )
 import qualified RPG.Engine.Log               as L
@@ -20,10 +14,10 @@ import RPG.Message                            ( Message(..) )
 import qualified RPG.Engine.Global.Env        as G
 
 
-class (Show a,
-       SR.Disconnect m a,
-       SR.SendTo a m Message,
-       SR.WaitReceiveFrom a m Request) => Driver m a
+class    (Show a,
+          SR.Disconnect m a,
+          SR.SendTo a m Message,
+          SR.WaitReceiveFrom a m Request) => Driver m a
 
 instance (Show a,
           SR.Disconnect m a,
@@ -38,64 +32,64 @@ listen port continue = G.gCatch act err where
     let msg = "Listening socket: " ++ show (e :: SomeException)
     L.log L.Critical $ L.SocketError msg
     throwM e
-  loop sl = forever $ do
-    G.gBracketOnError
-      (acceptDriver sl) (lift . flip SR.disconnect Nothing) $ \c -> do
-        env <- ask
-        lh  <- lift ask
-        liftIO . void . forkIO . (G.runG env lh) $ G.gCatch (continue c) $ \e -> do
-          L.log L.Critical $ L.General $ show (e :: SomeException)
-          lift $ SR.disconnect c $ Just $ show e
+  loop sl = forever $ G.gBracketOnError accept drop go where
+    accept = acceptDriver sl
+    drop   = lift . flip SR.disconnect Nothing
+    go c   = do
+      env <- ask
+      lh  <- lift ask
+      liftIO . void . forkIO . (G.runG env lh) $ G.gCatch (continue c) $
+        \e -> do L.log L.Critical $ L.General $ show (e :: SomeException)
+                 lift $ SR.disconnect c $ Just $ show e
 
 
-acceptDriver :: (MonadIO m, L.Log m (SR.Connected N.SockAddr N.Socket))
-                =>
-                N.Socket ->
-                m (SR.Logging (SR.JSON (SR.Logging (SR.WithSocketAddress SR.UTF8Handle))))
+type LoggingHandle = SR.Logging (SR.WithSocketAddress SR.UTF8Handle)
+
+acceptDriver :: (MonadIO m, L.Log m (SR.Connected N.SockAddr N.Socket)) =>
+                N.Socket -> m (SR.Logging (SR.JSON LoggingHandle))
 acceptDriver listener = do
   (s, sa) <- liftIO $ N.accept listener
-  L.log L.Info $ SR.Connected sa $ Right s
+  L.log L.Info . SR.Connected sa $ Right s
   h <- liftIO $ SR.socketToUTF8Handle s
-  return $ SR.Logging L.Debug $ SR.JSON $ SR.Logging L.DebugBytes $
+  return . SR.Logging L.Debug . SR.JSON . SR.Logging L.DebugBytes $
     SR.makeWithSocketAddress sa h
 
 
 createListener :: Int -> G.G N.Socket
-createListener port = do
-  let jhints = Just $ N.defaultHints { N.addrFlags = [N.AI_PASSIVE] }
-  a:_  <- liftIO $ N.getAddrInfo jhints (Just "127.0.0.1") (Just $ show port)
-  G.gBracketOnError
-    (liftIO $ N.socket (N.addrFamily a) N.Stream N.defaultProtocol)
-    (\s -> do let msg = "Can't configure listening socket"
-              L.log L.Critical $ L.SocketError msg
-              destroyListener s)
-    (\s -> do
-        liftIO $ do
-          N.setSocketOption s N.ReuseAddr 1
-          N.setSocketOption s N.NoDelay 1
-          N.bind s $ N.addrAddress a
-          N.listen s 3
-        L.log L.Info $ L.ListeningForConnections L.Socket port
-        return s)
+createListener port = mkListen . head =<< addresses where
+  mkListen a = G.gBracketOnError (liftIO $ open a) close (start a)
+  open a     = N.socket (N.addrFamily a) N.Stream N.defaultProtocol
+  close s    = do let msg = "Can't configure listening socket"
+                  L.log L.Critical $ L.SocketError msg
+                  destroyListener s
+  start a s  = do liftIO $ do N.setSocketOption s N.ReuseAddr 1
+                              N.setSocketOption s N.NoDelay 1
+                              N.bind s $ N.addrAddress a
+                              N.listen s 3
+                  L.log L.Info $ L.ListeningForConnections L.Socket port
+                  return s
+  addresses  = liftIO $ N.getAddrInfo jhints (Just ipS) (Just pS) where
+    jhints = Just $ N.defaultHints { N.addrFlags = [N.AI_PASSIVE] }
+    ipS    = "127.0.0.1"
+    pS     = show port
 
 
 destroyListener :: N.Socket -> G.G ()
-destroyListener s = do
-  liftIO $ N.close s
-  L.log L.Info $ L.NoLongerListeningForConnections L.Socket
+destroyListener s = liftIO (N.close s) >> lg where
+  lg = L.log L.Info $ L.NoLongerListeningForConnections L.Socket
 
 
--- currently unused, but still export it, to silence the
+-- currently unused, but export it anyway, to silence the
 -- compiler's warning
 getMyIPAddr :: IO N.HostName
 getMyIPAddr = do
-  let hints = N.defaultHints { N.addrFlags = [N.AI_NUMERICHOST,
-                                              N.AI_NUMERICSERV],
-                               N.addrSocketType = N.Datagram }
-  a:_ <- N.getAddrInfo (Just hints) (Just "8.8.8.8") (Just "80")
-  s   <- N.socket (N.addrFamily a) (N.addrSocketType a) (N.addrProtocol a)
+  let addrFlags = [N.AI_NUMERICHOST, N.AI_NUMERICSERV]
+      hints     = N.defaultHints { N.addrSocketType = N.Datagram,
+                                   N.addrFlags      = addrFlags }
+  a <- head <$> N.getAddrInfo (Just hints) (Just "8.8.8.8") (Just "80")
+  s <- N.socket (N.addrFamily a) (N.addrSocketType a) (N.addrProtocol a)
   N.connect s $ N.addrAddress a
-  mySockAddr    <- N.getSocketName s
+  mySockAddr   <- N.getSocketName s
   (ipMaybe, _) <- N.getNameInfo [N.NI_NUMERICHOST] True False mySockAddr
   N.close s
   return $ fromJust ipMaybe

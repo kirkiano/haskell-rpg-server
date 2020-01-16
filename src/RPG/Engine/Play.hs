@@ -6,12 +6,14 @@ module RPG.Engine.Play ( Play(..),
 import Prelude                       hiding ( length, lookup )
 import Control.Monad.Trans.Except           ( withExceptT )
 import qualified Data.Set                   as S
-import Data.Text                            ( Text )
+import Data.Text                            ( Text, strip )
 import Database.CRUD
+import RPG.Common.Id
 import RPG.Common.Has
 import RPG.Engine.Common
 import RPG.Error                            ( RPG,
-                                              Error(DataError) {- PlayerError -} )
+                                              Error(DataError,
+                                                    InvalidExit) )
 import RPG.Error.Data                       ( D )
 import RPG.World
 import qualified RPG.World.IDMap            as IDM
@@ -31,6 +33,8 @@ myID = lift getCID
 -- | A monad representing the play of a specific character.
 class HasCID m => Play m where
   join :: RPG m ()
+
+  myPID :: RPG m PlaceID
 
   whoAmI :: RPG m (IDV CharR, CharDescription)
 
@@ -54,9 +58,6 @@ class HasCID m => Play m where
   -- | if input is nonwhitespace, then say it and return it and hearers
   say :: Text -> RPG m (Text, S.Set CharID)
 
-  -- | if input is nonwhitespace, then say it and return it and observers
-  whisper :: Text -> CharID -> RPG m (Text, S.Set CharID)
-
   describeChar :: CharID -> RPG m CharDescription
 
   describeThing :: ThingID -> RPG m ThingDescription
@@ -68,38 +69,54 @@ class HasCID m => Play m where
 ------------------------------------------------------------
 
 instance (HasCID m, Db m) => Play m where
-  join = ok . update . (, LoggedIn True)  =<< myID
-  quit = ok . update . (, LoggedIn False) =<< myID
+  join = withE . update . (, LoggedIn True)  =<< myID
+  quit = withE . update . (, LoggedIn False) =<< myID
 
-  whoAmI = ok $ do cid                  <- myID
-                   r :: IDV CharR       <- lookup cid
-                   d :: CharDescription <- lookup cid
-                   return (r, d)
+  myPID = withE $ lookup =<< myID
+             
+  whoAmI = withE $ do cid <- myID
+                      (,) <$> lookup cid <*> lookup cid
 
-  myHandle = ok $ lookup =<< myID
+  myHandle = withE . lookup =<< myID
 
-  whereAmI = ok $ do cid               <- myID
-                     pid :: PlaceID    <- lookup cid
-                     p   :: IDV PlaceR <- lookup pid
-                     return p
+  whereAmI = withE . lookup =<< myPID
 
-  whatIsHere = ok $ do cid                        <- myID
-                       pid :: PlaceID             <- lookup cid
-                       ts  :: S.Set (IDV ThingR)  <- lookup pid
-                       return ts
+  whatIsHere = withE . lookup =<< myPID
 
-  whoIsHere = ok $ do cid                    <- myID
-                      pid :: PlaceID         <- lookup cid
-                      cs  :: IDM.IDMap CharR <- lookup pid
-                      return . S.fromList . IDM.toList $ cs
+  whoIsHere = S.fromList . IDM.toList <$> (withE . lookup =<< myPID)
 
-  describeChar = ok . lookup
+  describeChar = withE . lookup
 
-  describeThing tid = ok $ do t :: IDV ThingR <- lookup tid
-                              getM t
+  describeThing tid = withE $ do t :: IDV ThingR <- lookup tid
+                                 getM t
 
-  editMe d = ok . update . (, d) =<< myID
+  editMe d = withE . update . (, d) =<< myID
+
+  say = decide . strip where
+    decide "" = return ("", S.empty)
+    decide ss = (ss,) . S.map (getF :: IDV CharR -> CharID) <$> whoIsHere
+
+  exits = S.fromList . IDM.toList <$> (withE . lookup =<< myPID)
+
+  exit eid = do
+    e@(Id _ er) :: IDV ExitR <- withE $ lookup eid
+    pid <- myPID
+    when (pid /= sourceID er) $ throwE (InvalidExit eid)
+    cids :: S.Set CharID <- S.map getF <$> whoIsHere
+    c  :: IDV CharR <- myHandle
+    let meID :: CharID = getF c
+        pid'           = destinationID er
+    withE $ update (meID, pid')
+    cids' :: S.Set CharID <- S.map getF <$> whoIsHere
+    let rid :: PortalID = getF e
+    r  :: IDV PortalRec <- withE $ lookup rid
+    p' :: IDV PlaceR    <- withE $ lookup pid'
+    let myName :: CharName   = getF c
+        pn     :: PlaceName  = getF p'
+        d      :: Direction  = getF e
+        rn     :: PortalName = getF r
+    return (rn, pn, cids, cids', meID, myName, d)
 
 
-ok :: Functor m => D m a -> RPG m a
-ok = withExceptT DataError
+withE :: Functor m => D m a -> RPG m a
+withE = withExceptT DataError

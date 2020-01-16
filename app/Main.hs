@@ -1,7 +1,4 @@
-{-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE FlexibleContexts,
-             AllowAmbiguousTypes,
-             OverloadedStrings #-}
+
 module Main ( main ) where
 
 import RPG.Engine.Common
@@ -12,21 +9,20 @@ import Control.Concurrent.STM.TQueue        ( newTQueue,
                                               readTQueue,
                                               writeTQueue )
 import qualified Data.Map                   as M
+import qualified Data.Set                   as S
 import System.IO                            ( stdout )
 import qualified System.Posix.Signals       as P
--- import RPGServer.Util.Fork                  ( )
 import qualified RPG.Engine.Global          as G
-import qualified RPG.Engine.Listen.Socket   as S
+import qualified RPG.Engine.Listen.Socket   as K
 import RPG.Engine.Listen.Driver            ( driverAction )
-import RPG.Engine.Game.Loop                ( gameLoop,
+import RPG.Engine.Game                     ( gameLoop,
                                              LoopState(LoopState) )
 
 
 data TopEnv = TopEnv {
-    env                  :: G.Env
-  , socketListenerTID    :: C.ThreadId
+    env               :: G.Env
+  , socketListenerTID :: C.ThreadId
   }
-
 
 instance Show TopEnv where
   show te = ("sock thread: " ++ show (socketListenerTID te) ++
@@ -40,11 +36,12 @@ main = G.getSettings >>= go where
     startup = do
       Right e <- runReaderT (runReaderT (runExceptT G.createEnv) s) lh
       q       <- atomically newTQueue
-      let dequeue   = liftIO . atomically . readTQueue $ q
-          sPort     = G.tcpPort s
-          toGame x  = liftIO $ atomically $ writeTQueue q x
-          slst      = S.listen sPort $ driverAction toGame
-          frk       = C.forkIO . (G.runG e lh)
+      let dequeue  = liftIO . atomically . readTQueue $ q
+          sPort    = G.tcpPort s
+          toGame x = liftIO . atomically $ writeTQueue q x
+          drive c  = void $ evalStateT (driverAction toGame c) S.empty
+          slst     = K.listen sPort drive
+          frk      = C.forkIO . (G.runG e lh)
       _     <- frk $ evalStateT (gameLoop dequeue) $ LoopState M.empty
       slTID <- frk slst
       return $ TopEnv e slTID
@@ -53,7 +50,7 @@ main = G.getSettings >>= go where
 queryUser :: TopEnv -> IO ()
 queryUser _ = do
   tid <- C.myThreadId
-  _ <- P.installHandler P.keyboardSignal (P.Catch $ C.killThread tid) Nothing
+  void $ P.installHandler P.keyboardSignal (P.Catch $ C.killThread tid) Nothing
   forever $ do
     ln <- getLine
     if ln == "quit"
@@ -65,5 +62,5 @@ shutdown :: G.Settings -> TopEnv -> IO ()
 shutdown s te = do
   let lh  = (G.logThresh s, stdout)
       err = userError "terminate"
-  C.throwTo (socketListenerTID    te) err
+  C.throwTo (socketListenerTID te) err
   runReaderT (G.destroyEnv $ env te) lh
