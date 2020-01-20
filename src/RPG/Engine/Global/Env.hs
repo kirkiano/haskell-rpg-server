@@ -17,6 +17,7 @@ import qualified Database.PostgreSQL.Simple  as P
 import Database.CRUD
 import qualified RPG.Engine.Log              as L
 import qualified RPG.Engine.Global.Settings  as S
+import RPG.Error.Data                        ( Error )
 import qualified RPG.DB                      as DB
 
 
@@ -67,9 +68,10 @@ instance Show a => L.Log G a where
 
 ------------------------------------------------------------
 
-createEnv :: (MonadIO m,
-              L.Log m L.Main) =>
-             ExceptT () (ReaderT S.Settings m) Env
+type DBConnError = Either (Either () IOError) Error
+
+createEnv :: (MonadIO m, L.Log m L.Main) =>
+             ExceptT DBConnError (ReaderT S.Settings m) Env
 createEnv = Env <$> connDB <*> (lift $ asks S.saveUtterances) where
   connDB = connect . ((),) =<< (lift $ asks S.pgSettings)
 

@@ -38,7 +38,7 @@ dependencies:
 - regex-compat         == 0.95.1
 - rpg-common           == 0.2.0.0
 - rpg-db               == 0.1.0.0
-- send-receive         == 0.2.6.0
+- send-receive         == 1.0.0.0
 - stm                  == 2.5.0.0
 - text                 == 1.2.3.1
 - time                 == 1.8.0.2

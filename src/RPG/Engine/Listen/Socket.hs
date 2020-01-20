@@ -32,8 +32,7 @@ listen port continue = G.gCatch act err where
     let msg = "Listening socket: " ++ show (e :: SomeException)
     L.log L.Critical $ L.SocketError msg
     throwM e
-  loop sl = forever $ G.gBracketOnError accept drop go where
-    accept = acceptDriver sl
+  loop s = forever $ G.gBracketOnError (accept s) drop go where
     drop   = lift . flip SR.disconnect Nothing
     go c   = do
       env <- ask
@@ -45,11 +44,12 @@ listen port continue = G.gCatch act err where
 
 type LoggingHandle = SR.Logging (SR.WithSocketAddress SR.UTF8Handle)
 
-acceptDriver :: (MonadIO m, L.Log m (SR.Connected N.SockAddr N.Socket)) =>
-                N.Socket -> m (SR.Logging (SR.JSON LoggingHandle))
-acceptDriver listener = do
+accept :: (MonadIO m,
+           L.Log m (SR.Connected N.SockAddr IOError N.Socket)) =>
+          N.Socket -> m (SR.Logging (SR.JSON LoggingHandle))
+accept listener = do
   (s, sa) <- liftIO $ N.accept listener
-  L.log L.Info . SR.Connected sa $ Right s
+  L.log L.Info . SR.Connected sa $ (Right s :: Either IOError N.Socket)
   h <- liftIO $ SR.socketToUTF8Handle s
   return . SR.Logging L.Debug . SR.JSON . SR.Logging L.DebugBytes $
     SR.makeWithSocketAddress sa h

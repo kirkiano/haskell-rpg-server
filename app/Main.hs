@@ -42,9 +42,8 @@ main = G.getSettings >>= go where
           drive c  = void $ evalStateT (driverAction toGame c) S.empty
           slst     = K.listen sPort drive
           frk      = C.forkIO . (G.runG e lh)
-      _     <- frk $ evalStateT (gameLoop dequeue) $ LoopState M.empty
-      slTID <- frk slst
-      return $ TopEnv e slTID
+      _ <- frk $ evalStateT (gameLoop dequeue) $ LoopState M.empty
+      TopEnv e <$> frk slst
 
 
 queryUser :: TopEnv -> IO ()

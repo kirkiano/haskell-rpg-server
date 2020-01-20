@@ -27,9 +27,9 @@ driverAction :: (MonadIO m,
                 =>
                 ((Request, Message -> m ()) -> m ()) -> a -> DState m ()
 driverAction toGame d = void . runExceptT $ catchE loop (lift . dismiss) where
-  sendDriver = void . runExceptT . (SR.send d)
+  sendDriver = void . runExceptT . (SR.sendTo d)
   loop       = do
-    q <- mapExceptT lift $ SR.waitRecv d
+    q <- mapExceptT lift $ SR.waitRecvFrom d
     lift $ do maybe (return ()) (regChar  True) $ isJoin q
               maybe (return ()) (regChar False) $ isQuit q
               lift $ toGame (q, sendDriver)
