@@ -5,13 +5,13 @@ build:
 	stack build
 
 run: port
-	stack exec rpg-engine-exe -- -p $(TCP_PORT)
+	stack run -- -p $(TCP_PORT)
 
 debug: port
-	stack exec rpg-engine-exe -- -p $(TCP_PORT) -v 7
+	stack run -- -p $(TCP_PORT) -v 7
 
 debugbytes: port
-	stack exec rpg-engine-exe -- -p $(TCP_PORT) -v 8
+	stack run -- -p $(TCP_PORT) -v 8
 
 test:
 	stack test --cabal-verbose
