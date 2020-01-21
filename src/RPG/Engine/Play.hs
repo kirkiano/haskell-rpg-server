@@ -60,7 +60,7 @@ class HasCID m => Play m where
 
   describeChar :: CharID -> RPG m CharDescription
 
-  describeThing :: ThingID -> RPG m ThingDescription
+  describeThing :: ThingID -> RPG m (Maybe ThingTypeDescription)
 
   editMe :: CharDescription -> RPG m ()
 
@@ -87,8 +87,7 @@ instance (HasCID m, Db m) => Play m where
 
   describeChar = withE . lookup
 
-  describeThing tid = withE $ do t :: IDV ThingR <- lookup tid
-                                 getM t
+  describeThing = withE . lookup
 
   editMe d = withE . update . (, d) =<< myID
 

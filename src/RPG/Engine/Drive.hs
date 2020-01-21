@@ -4,6 +4,8 @@ module RPG.Engine.Drive ( Drive(..) ) where
 import Prelude                      hiding ( length, lookup )
 import Data.Set                            ( Set, singleton )
 import Database.CRUD
+import RPG.Common.Has
+import RPG.Common.Construct
 import RPG.World
 import RPG.DB                              ( Db )
 import RPG.Error.Data                      ( D )
@@ -21,6 +23,9 @@ class Monad m => Drive m where
 instance (Monad m, Db m) => Drive m where
   getCharactersByPrefix = lookup
 
-  createCharacter n d pid = save (Chars, (n, d, pid))
+  createCharacter n d pid = do
+    let cr :: CharR = construct (n, LoggedIn False)
+    c :: IDV CharR <- save (cr, (d, pid))
+    return (getF c :: CharID)
 
   deleteCharacter = delete . singleton

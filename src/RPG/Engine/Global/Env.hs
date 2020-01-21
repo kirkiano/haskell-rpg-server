@@ -21,7 +21,7 @@ import RPG.Error.Data                        ( Error )
 import qualified RPG.DB                      as DB
 
 
-type DBase = DB.Cover (IORef DB.Maps) P.Connection
+type DBase = DB.Cover (L.Logging (IORef DB.Maps)) (L.Logging P.Connection)
 
 data Env = Env { dBase   :: L.Logging DBase,
                  saveUtt :: Bool }
@@ -70,14 +70,16 @@ instance Show a => L.Log G a where
 
 type DBConnError = Either (Either () IOError) Error
 
-createEnv :: (MonadIO m) =>
-             ExceptT DBConnError (ReaderT S.Settings m) Env
+createEnv :: (MonadIO m) => ExceptT DBConnError (ReaderT S.Settings m) Env
 createEnv = Env <$> connDB <*> (lift $ asks S.saveUtterances) where
-    connDB  = (wrap =<<) . SR.connect . ((),) =<< (lift $ asks S.pgSettings)
-    wrap db = do thresh <- lift $ asks S.logThresh
-                 return $ L.Logging thresh db
+  connDB  = do pg <- lift $ asks S.pgSettings
+               SR.connect $ L.Logging L.Debug (L.Logging L.Debug (),
+                                               L.Logging L.Debug pg)
 
-destroyEnv :: (MonadIO m, L.Log m (SR.Disconnected DBase)) =>
+destroyEnv :: (MonadIO m,
+               L.Log m (SR.Disconnected P.Connection),
+               L.Log m (SR.Disconnected (IORef DB.Maps)),
+               L.Log m (SR.Disconnected DBase)) =>
               Env -> m ()
 destroyEnv = flip SR.disconnect Nothing . dBase
 

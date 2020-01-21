@@ -28,9 +28,7 @@ play WhereAmI   = do p :: IDV PlaceR <- whereAmI
                      return (Just v, S.empty)
 
 play WhatIsHere = do ts :: S.Set (IDV ThingR) <- whatIsHere
-                     let f ti = (getF ti :: ThingID,
-                                 getF ti :: ThingName)
-                         v    = V.PlaceContents . S.map f $ ts
+                     let v = V.PlaceContents ts
                      return (Just v, S.empty)
 
 play WaysOut    = (, S.empty) . Just . V.Exits <$> exits
@@ -78,15 +76,16 @@ play Quit = do
   cid <- myID
   (Nothing,) . S.singleton . (E.Disjoined cid,) . S.map getF <$> whoIsHere
 
-play (DescribeChar cid)   = do
+play (DescribeChar cid) = do
   CharDescription d <- describeChar cid
   let v = Just $ V.CharDescription cid d
   myCID <- myID
-  (v,) . S.singleton . (E.Looked myCID cid,) . S.map getF <$> whoIsHere
+  (v,) . S.singleton . (E.Looked myCID (Left cid),) . S.map getF <$> whoIsHere
 
-play (DescribeThing tid)   = do
-  ThingDescription d <- describeThing tid
-  let v = Just $ V.ThingDescription tid d
---  cid <- myID
---  (v,) . (:[]) . (E.Looked cid tid,) <$> whoseIDsAreHere
+play (DescribeThing tid) = do
+  dM <- describeThing tid
+  let f (ThingTypeDescription d) = d
+      v = Just . V.ThingDescription tid . maybe "" f $ dM
+  cid <- myID
+  (v,) . (:[]) . (E.Looked cid (Right tid),) <$> whoIsHere
   return (v, S.empty)

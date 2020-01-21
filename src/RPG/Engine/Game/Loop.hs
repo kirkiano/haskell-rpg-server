@@ -31,6 +31,7 @@ gameLoop :: (MonadIO m,
              L.Log m Message) => m (Request, Message -> m ()) -> L m ()
 gameLoop nextRequest = forever $ lift nextRequest >>= handle where
   handle (q, sendMsg) = do
+    L.log L.Info q
     maybe (return ()) (loginChar sendMsg) $ isJoin q
     maybe (return ()) logoutChar          $ isQuit q
     (msgM, ers) <- lift $ drive q
@@ -38,8 +39,8 @@ gameLoop nextRequest = forever $ lift nextRequest >>= handle where
     maybe (return ()) report msgM
     where
       report msg = L.log (logLevel msg) msg >> lift (sendMsg msg) where
-        logLevel (Error _ _) = L.Info
-        logLevel _           = L.Debug
+        logLevel (Error _ _) = L.Warn
+        logLevel _           = L.Info
 
 loginChar :: (Monad m, L.Log m L.Game) => (Message -> m ()) -> CharID -> L m ()
 loginChar sendMsg cid = do
