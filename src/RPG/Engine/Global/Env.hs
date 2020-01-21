@@ -12,7 +12,7 @@ import RPG.Engine.Common
 import Prelude hiding                        ( getContents )
 import Data.IORef                            ( IORef )
 import GHC.IO.Handle                         ( Handle )
-import SendReceive.Connect
+import qualified SendReceive                 as SR
 import qualified Database.PostgreSQL.Simple  as P
 import Database.CRUD
 import qualified RPG.Engine.Log              as L
@@ -23,7 +23,7 @@ import qualified RPG.DB                      as DB
 
 type DBase = DB.Cover (IORef DB.Maps) P.Connection
 
-data Env = Env { dBase   :: DBase,
+data Env = Env { dBase   :: L.Logging DBase,
                  saveUtt :: Bool }
          deriving Show
 
@@ -70,28 +70,40 @@ instance Show a => L.Log G a where
 
 type DBConnError = Either (Either () IOError) Error
 
-createEnv :: (MonadIO m, L.Log m L.Main) =>
+createEnv :: (MonadIO m) =>
              ExceptT DBConnError (ReaderT S.Settings m) Env
 createEnv = Env <$> connDB <*> (lift $ asks S.saveUtterances) where
-  connDB = connect . ((),) =<< (lift $ asks S.pgSettings)
+    connDB  = (wrap =<<) . SR.connect . ((),) =<< (lift $ asks S.pgSettings)
+    wrap db = do thresh <- lift $ asks S.logThresh
+                 return $ L.Logging thresh db
 
-
-destroyEnv :: (MonadIO m, L.Log m L.Main) => Env -> m ()
-destroyEnv = flip disconnect Nothing . dBase
+destroyEnv :: (MonadIO m, L.Log m (SR.Disconnected DBase)) =>
+              Env -> m ()
+destroyEnv = flip SR.disconnect Nothing . dBase
 
 ------------------------------------------------------------
 
-instance (Monad m, SaveM e m DBase i o)   => SaveM e m Env i o where
+instance (Monad m,
+          SaveM e m DBase i o,
+          L.Log m (SaveLog DBase i o e)) => SaveM e m Env i o where
   saveM i = saveM i . dBase
 
-instance (Monad m, LookupM e m DBase i o) => LookupM e m Env i o where
+instance (Monad m,
+          LookupM e m DBase i o,
+          L.Log m (LookupLog DBase i o e)) => LookupM e m Env i o where
   lookupM i = lookupM i . dBase
 
-instance (Monad m, UpdateM e m DBase i)   => UpdateM e m Env i where
+instance (Monad m,
+          UpdateM e m DBase i,
+          L.Log m (UpdateLog DBase i e)) => UpdateM e m Env i where
   updateM i = updateM i . dBase
 
-instance (Monad m, UpsertM e m DBase i o) => UpsertM e m Env i o where
+instance (Monad m,
+          UpsertM e m DBase i o,
+          L.Log m (UpsertLog DBase i o e)) => UpsertM e m Env i o where
   upsertM i = upsertM i . dBase
 
-instance (Monad m, DeleteM e m DBase i)   => DeleteM e m Env i where
+instance (Monad m,
+          DeleteM e m DBase i,
+          L.Log m (DeleteLog DBase i e)) => DeleteM e m Env i where
   deleteM i = deleteM i . dBase

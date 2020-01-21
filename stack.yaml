@@ -66,7 +66,7 @@ extra-deps:
 - git: git@github.com-kirkiano:kirkiano/rpg-common-haskell.git
   commit: 024d8f2ec28c31ef88ee4431fb1b620d9e1b8c96
 - git: git@github.com-kirkiano:kirkiano/rpg-db-haskell.git
-  commit: ed8feb29ff69995a897304c0a113f0471e94ec9b
+  commit: 40d9c9d447fab492b19c63bace155a8ebd9df803
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
