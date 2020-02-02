@@ -2,6 +2,7 @@
 module RPG.Engine.Game.LoopState ( L,
                                    LoopState(LoopState),
                                    notify,
+                                   isCharIDRegistered,
                                    addEventSender,
                                    dropEventSender ) where
 
@@ -17,8 +18,8 @@ import RPG.Event                          ( Event )
 
 type L m = StateT (LoopState m) m
 
-
 data LoopState m = LoopState { emap :: M.Map CharID (Event -> m ()) }
+
 
 notify :: (MonadIO m, L.Log m L.Game) => Event -> S.Set CharID -> L m ()
 notify evt cids = lgE >> mapM_ notifyOne cids where
@@ -34,6 +35,10 @@ addEventSender cid sndr = modify' $ LoopState . (M.insert cid sndr) . emap
 
 dropEventSender :: Monad m => CharID -> L m ()
 dropEventSender cid = modify' $ LoopState . M.delete cid . emap
+
+
+isCharIDRegistered :: Monad m => CharID -> L m Bool
+isCharIDRegistered cid = M.member cid <$> gets emap
 
 -----------------------------------------------------------
 -- log

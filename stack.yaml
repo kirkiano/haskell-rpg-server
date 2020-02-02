@@ -64,7 +64,7 @@ extra-deps:
 - git: git@github.com-kirkiano:kirkiano/haskell-send-receive.git
   commit: 14a586059b90b26e6670159c8d8823804ed14fa3
 - git: git@github.com-kirkiano:kirkiano/rpg-common-haskell.git
-  commit: 9f5d5cee3046805db2ee9eefe513b65a16632f86
+  commit: 4146fe0348d8a6274299a71cf85eaa1b1e854f85
 - git: git@github.com-kirkiano:kirkiano/rpg-db-haskell.git
   commit: 7046552724750655b100f9c6e8dbe291cb0bd801
 
