@@ -18,8 +18,7 @@ import RPG.Engine.Game.Play               ( play )
 import RPG.DB                             ( Db )
 import qualified RPG.Error.Data           as D
 import RPG.Engine.Drive                   ( Drive(..) )
-import RPG.Error                          ( Error(DataError,
-                                                  CharacterNotLoggedIn) )
+import RPG.Error                          ( Error(DataError, CharLoggedOut) )
 import RPG.Engine.Game.LoopState          ( L,
                                             notify,
                                             isCharIDRegistered,
@@ -61,21 +60,22 @@ logoutChar cid = do
 drive :: (MonadIO m, Db m, L.Log m L.Game) =>
          Request -> L m (Maybe Message, S.Set (Event, S.Set CharID))
 
-drive q@(CharactersByPrefix pf) = runAndMsg q f $ CharIDsWithPrefix pf where
+drive q@(CharsByPrefix pf) = runAndMsg q f $ CharsWithPrefix pf where
   f = getCharactersByPrefix pf
 
-drive q@(CreateCharacter n d pid) = runAndMsg q f $ CharacterCreated n where
+drive q@(CreateChar n d pid) = runAndMsg q f $ CharCreated n where
   f = createCharacter n d pid
 
-drive q@(DestroyCharacter cid) = runAndMsg q f CharacterDestroyed where
+drive q@(DestroyChar cid) = runAndMsg q f CharDestroyed where
   f = deleteCharacter cid >> return cid
 
 drive q@(CharRequest cid pq) = do
   loggedIn <- isCharIDRegistered cid
   if loggedIn then ok else return err where
-    ok  = do (cmsgM, ers) <- lift $ charRequest cid pq
-             return (fmap (CharMessage cid) cmsgM, ers)
-    err = (Just . Error q . CharacterNotLoggedIn $ cid, S.empty)
+    ok  = do (cmsgEM, ers) <- lift $ charRequest cid pq
+             let f = either (Error q) (CharMessage cid)
+             return (fmap f cmsgEM, ers)
+    err = (Just . Error q . CharLoggedOut $ cid, S.empty)
 
 
 runAndMsg :: Monad m =>
@@ -90,8 +90,8 @@ runAndMsg q f sd = lift $ (, S.empty) . Just . either err sd <$> runExceptT f
 charRequest :: (MonadIO m, Db m, L.Log m L.Game) =>
                CharID ->
                CharRequest ->
-               m (Maybe CharMessage, S.Set (Event, S.Set CharID))
+               m (Maybe (Either Error CharMessage), S.Set (Event, S.Set CharID))
 charRequest cid cq = return . either err ok =<< playIt where
   playIt       = runReaderT (runExceptT $ play cq) $ Player cid
-  err e        = (Just $ CharError cq e, S.empty)
-  ok (vM, ers) = (fmap ValueMessage vM, ers)
+  err e        = (Just $ Left e, S.empty)
+  ok (vM, ers) = (fmap (Right . ValueMessage) vM, ers)

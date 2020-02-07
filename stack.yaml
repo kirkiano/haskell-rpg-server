@@ -64,9 +64,9 @@ extra-deps:
 - git: git@github.com-kirkiano:kirkiano/haskell-send-receive.git
   commit: 14a586059b90b26e6670159c8d8823804ed14fa3
 - git: git@github.com-kirkiano:kirkiano/rpg-common-haskell.git
-  commit: 4146fe0348d8a6274299a71cf85eaa1b1e854f85
+  commit: f1fa453aa9930868e996b549ad2bd1f0783d4637
 - git: git@github.com-kirkiano:kirkiano/rpg-db-haskell.git
-  commit: 7046552724750655b100f9c6e8dbe291cb0bd801
+  commit: c85952ad1b2e0a60948ae5bdc0a91f0667720291
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

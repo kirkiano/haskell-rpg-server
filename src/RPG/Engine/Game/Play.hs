@@ -2,6 +2,7 @@
 module RPG.Engine.Game.Play ( play ) where
 
 import qualified Data.Set                   as S
+import Data.Text                            ( strip )
 import RPG.Common.Has                       ( getF )
 import RPG.Request                          ( CharRequest(..) )
 import RPG.Engine.Play                      ( Play(..), myID )
@@ -14,78 +15,72 @@ import RPG.World
 
 play :: Play m => CharRequest -> RPG m Result
 
-play WhoAmI     = do (cr, cdesc) <- whoAmI
-                     let cid   :: CharID   = getF cr
-                         cname :: CharName = getF cr
-                         v                 = V.YouAre cid cname cdesc
+play WhoAmI     = do (c, cdesc) <- whoAmI
+                     let cid   = getF c :: CharID
+                         cname = getF c :: CharName
+                         v     = V.YouAre cid cname cdesc
                      return (Just v, S.empty)
 
-play WhereAmI   = do p :: IDV PlaceR <- whereAmI
-                     let pid :: PlaceID          = getF p
-                         pnm :: PlaceName        = getF p
-                         pd  :: PlaceDescription = getF p
-                         v                       = V.Place pid pnm pd
-                     return (Just v, S.empty)
+play WhereAmI   = (, S.empty) . Just . V.Place <$> whereAmI
 
-play WhatIsHere = do ts :: S.Set (IDV ThingR) <- whatIsHere
-                     let v = V.PlaceContents ts
-                     return (Just v, S.empty)
+play WhatIsHere = (, S.empty) . Just . V.Contents <$> whatIsHere
 
-play WaysOut    = (, S.empty) . Just . V.Exits <$> exits
+play WhoIsHere = (, S.empty) . Just . V.Occupants <$> whoIsHere
+
+play HowCanIExit = (, S.empty) . Just . V.WaysOut <$> exits
 
 play (Exit eid) = do
-  (rName, nbrName, oldRecips, newRecips, meID, myName, dir) <- exit eid
-  let -- newRecips won't understand what eid refers to (think!), so pass them
+  (rName, nbrName, oldRecips, newRecips, dir) <- exit eid
+  me <- myHandle
+  let -- oldRecips can see eid, but newRecips can't. So pass them
       -- instead the names of the exit and the neighboring place
-      exited  = E.Exited  meID eid
-      entered = E.Entered meID myName rName nbrName dir
-      eL      = [(exited,  oldRecips),
-                 (entered, newRecips)]
-  return (Nothing, S.fromList eL)
-
-play (Say s) = do
-  (ss, cids) <- say s
-  cid        <- myID
-  let evts = if S.null cids then S.empty else S.singleton (E.Said cid ss, cids)
+      exited  = E.Exited  (getF me) eid
+      entered = E.Entered me rName nbrName dir
+      evts    = S.fromList [(exited,  oldRecips),
+                            (entered, newRecips)]
   return (Nothing, evts)
 
-play (Whisper s recipID) = do
-  cid        <- myID
-  (ss, cids) <- say s -- reuse 'say'
-  let evts   = if S.null cids then S.empty else S.fromList eL
-      eL     = [(whispr $ Just ss, duo),
-                (whispr   Nothing, S.difference cids duo)]
-      whispr = E.Whispered cid recipID
-      duo    = S.fromList [cid, recipID]  
-  return (Nothing, evts)
+play (Say s) = (Nothing,) <$> do
+  let ss = strip s
+  if ss == ""
+    then return S.empty
+    else do cid <- myID
+            S.singleton . (E.Said cid ss,) <$> cidsLoggedIn
+
+play (Whisper s recipID) = (Nothing,) <$> do
+  let ss = strip s
+  if ss == ""
+    then return S.empty
+    else do cid <- myID
+            cids <- cidsLoggedIn
+            let duo    = S.fromList [cid, recipID]
+                whispr = E.Whispered cid recipID
+            return $ S.fromList [(whispr $ Just ss,                   duo),
+                                 (whispr   Nothing, S.difference cids duo)]
 
 play (EditMe d) = do
   editMe d
   cid <- myID
-  (Nothing,) . S.singleton . (E.CharEdited cid,) . S.map getF <$> whoIsHere
+  (Nothing,) . S.singleton . (E.Edited cid,) <$> cidsLoggedIn
 
 play Join = do
   join
   cr <- myHandle
-  let cid :: CharID   = getF cr
-      cn  :: CharName = getF cr
-  (Nothing,) . S.singleton . (E.Joined cid cn,) . S.map getF <$> whoIsHere
+  (Nothing,) . S.singleton . (E.Joined cr,) <$> cidsLoggedIn
 
 play Quit = do
   quit
   cid <- myID
-  (Nothing,) . S.singleton . (E.Disjoined cid,) . S.map getF <$> whoIsHere
+  (Nothing,) . S.singleton . (E.Disjoined cid,) <$> cidsLoggedIn
 
-play (DescribeChar cid) = do
+play (Describe (Left cid)) = do
   CharDescription d <- describeChar cid
-  let v = Just $ V.CharDescription cid d
+  let v = Just $ V.Description (Left cid) d
   myCID <- myID
-  (v,) . S.singleton . (E.Looked myCID (Left cid),) . S.map getF <$> whoIsHere
+  (v,) . S.singleton . (E.Looked myCID (Left cid),) <$> cidsLoggedIn
 
-play (DescribeThing tid) = do
-  dM <- describeThing tid
-  let f (ThingTypeDescription d) = d
-      v = Just . V.ThingDescription tid . maybe "" f $ dM
+play (Describe (Right tid)) = do
+  ThingTypeDescription d <- describeThing tid
+  let v = Just . V.Description (Right tid) $ d
   cid <- myID
-  (v,) . (:[]) . (E.Looked cid (Right tid),) <$> whoIsHere
-  return (v, S.empty)
+  (v,) . S.singleton . (E.Looked cid (Right tid),) <$> cidsLoggedIn
