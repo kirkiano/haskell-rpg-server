@@ -130,11 +130,11 @@ instance (HasCID m, Db m) => Play m where
     e@(Id _ er) :: IDV ExitR <- withE $ lookup eid
     pid <- myPID
     when (pid /= sourceID er) $ throwE (InvalidExit eid)
-    cids :: S.Set CharID <- S.map getF <$> whoIsHere
+    cids :: S.Set CharID <- cidsLoggedIn
     i <- myID
     let pid' = destinationID er
     withE $ update (i, pid')
-    cids' :: S.Set CharID <- S.map getF <$> whoIsHere
+    cids' :: S.Set CharID <- cidsLoggedIn
     let rid :: PortalID = getF e
     r  :: IDV PortalRec <- withE $ lookup rid
     p' :: IDV PlaceR    <- withE $ lookup pid'
