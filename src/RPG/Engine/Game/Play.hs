@@ -15,12 +15,6 @@ import RPG.World
 
 play :: Play m => CharRequest -> RPG m Result
 
-play WhoAmI     = do (c, cdesc) <- whoAmI
-                     let cid   = getF c :: CharID
-                         cname = getF c :: CharName
-                         v     = V.YouAre cid cname cdesc
-                     return (Just v, S.empty)
-
 play WhereAmI   = (, S.empty) . Just . V.Place <$> whereAmI
 
 play WhatIsHere = (, S.empty) . Just . V.Contents <$> whatIsHere
@@ -30,12 +24,12 @@ play WhoIsHere = (, S.empty) . Just . V.Occupants <$> whoIsHere
 play HowCanIExit = (, S.empty) . Just . V.WaysOut <$> exits
 
 play (Exit eid) = do
-  (rName, nbrName, oldRecips, newRecips, dir) <- exit eid
+  (rName, nbrName, nbrAddrM, oldRecips, newRecips, dir) <- exit eid
   me <- myHandle
   let -- oldRecips can see eid, but newRecips can't. So pass them
       -- instead the names of the exit and the neighboring place
       exited  = E.Exited  (getF me) eid
-      entered = E.Entered me rName nbrName dir
+      entered = E.Entered me rName nbrName nbrAddrM dir
       evts    = S.fromList [(exited,  oldRecips),
                             (entered, newRecips)]
   return (Nothing, evts)
@@ -65,8 +59,9 @@ play (EditMe d) = do
 
 play Join = do
   join
-  cr <- myHandle
-  (Nothing,) . S.singleton . (E.Joined cr,) <$> cidsLoggedIn
+  (c, d) <- whoAmI
+  let v = V.YouAre c d
+  (Just v,) . S.singleton . (E.Joined c,) <$> cidsLoggedIn
 
 play Quit = do
   quit

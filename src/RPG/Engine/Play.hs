@@ -59,7 +59,7 @@ class HasCID m => Play m where
 
   -- | leave the current place by this exit, and return it, the characters in
   -- | the old place, those in the new place
-  exit :: ExitID -> RPG m (PortalName, PlaceName,
+  exit :: ExitID -> RPG m (PortalName, PlaceName, Maybe (IDV AddressR),
                            S.Set CharID,
                            S.Set CharID,
                            Direction)
@@ -132,16 +132,16 @@ instance (HasCID m, Db m) => Play m where
     when (getF p /= sourceID er) $ throwE (InvalidExit eid)
     cids :: S.Set CharID <- cidsLoggedIn
     i <- myID
-    let pid' = destinationID er
-    withE $ update (i, pid')
+    withE $ update (i, destinationID er)
     cids' :: S.Set CharID <- cidsLoggedIn
     let rid :: PortalID = getF e
     r  :: IDV PortalRec <- withE $ lookup rid
-    p' :: IDV PlaceR    <- withE $ lookup pid'
-    let pn :: PlaceName  = getF p
-        d  :: Direction  = getF e
-        rn :: PortalName = getF r
-    return (rn, pn, cids, cids', d)
+    let pn   :: PlaceName       = getF p
+        d    :: Direction       = getF e
+        rn   :: PortalName      = getF r
+        aidM :: Maybe AddressID = getF p
+    aM :: Maybe (IDV AddressR) <- withE $ mapM lookup aidM
+    return (rn, pn, aM, cids, cids', d)
 
 
 withE :: Functor m => D m a -> RPG m a
