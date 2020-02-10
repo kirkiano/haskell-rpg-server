@@ -128,8 +128,8 @@ instance (HasCID m, Db m) => Play m where
 
   exit eid = do
     e@(Id _ er) :: IDV ExitR <- withE $ lookup eid
-    pid <- myPID
-    when (pid /= sourceID er) $ throwE (InvalidExit eid)
+    p :: IDV PlaceR <- withE . lookup =<< myPID
+    when (getF p /= sourceID er) $ throwE (InvalidExit eid)
     cids :: S.Set CharID <- cidsLoggedIn
     i <- myID
     let pid' = destinationID er
@@ -138,7 +138,7 @@ instance (HasCID m, Db m) => Play m where
     let rid :: PortalID = getF e
     r  :: IDV PortalRec <- withE $ lookup rid
     p' :: IDV PlaceR    <- withE $ lookup pid'
-    let pn :: PlaceName  = getF p'
+    let pn :: PlaceName  = getF p
         d  :: Direction  = getF e
         rn :: PortalName = getF r
     return (rn, pn, cids, cids', d)
