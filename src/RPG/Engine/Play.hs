@@ -3,12 +3,15 @@ module RPG.Engine.Play ( Play(..),
                          HasCID(..),
                          myID ) where
 
-import Prelude                       hiding ( length, lookup )
+import Prelude                       hiding ( length,
+                                              lookup,
+                                              reverse )
 import Control.Monad.Trans.Except           ( withExceptT )
 import qualified Data.Set                   as S
 import Database.CRUD
 import RPG.Common.Id
 import RPG.Common.Has
+import RPG.Common.Construct
 import RPG.Engine.Common
 import RPG.Error                            ( RPG,
                                               Error(DataError,
@@ -28,41 +31,33 @@ class Monad m => HasCID m where
 myID :: (HasCID m, MonadTrans t) => t m CharID
 myID = lift getCID
 
+type ExitDetails = (Direction, PortalName, IDV PlaceRec)
+
 
 -- | A monad representing the play of a specific character.
 class HasCID m => Play m where
-  join :: RPG m ()
+  join :: RPG m (IDV CharR, CharDescription)
 
   myPID :: RPG m PlaceID
 
-  whoAmI :: RPG m (IDV CharR, CharDescription)
-
   myHandle :: RPG m (IDV CharR)
 
-  whereAmI :: RPG m (IDV (PlaceName, PlaceDescription,
-                          Maybe (IDV (AddressName, AddressNumber,
-                                      StreetName, CityName, CountryName))))
+
+  whereAmI :: RPG m (IDV PlaceRec)
 
   whatIsHere :: RPG m (S.Set (IDV ThingR))
 
   whoIsHere :: RPG m (S.Set (IDV CharR))
 
-  cidsLoggedIn :: RPG m (S.Set CharID)
-  cidsLoggedIn = S.map getF . S.filter f <$> whoIsHere where
+  cidsLoggedInHere :: RPG m (S.Set CharID)
+  cidsLoggedInHere = S.map getF . S.filter f <$> whoIsHere where
     f c = b where LoggedIn b = getF c
 
-  exitDetails :: ExitR -> RPG m (Direction, PortalName, PlaceName,
-                                 Maybe (IDV AddressR))
+  exits :: RPG m (S.Set (IDV ExitDetails))
 
-  exits :: RPG m (S.Set (IDV (Direction, PortalName, PlaceName,
-                              Maybe (IDV AddressR))))
-
-  -- | leave the current place by this exit, and return it, the characters in
-  -- | the old place, those in the new place
-  exit :: ExitID -> RPG m (PortalName, PlaceName, Maybe (IDV AddressR),
-                           S.Set CharID,
-                           S.Set CharID,
-                           Direction)
+  -- | leave the current place by this exit. Return the characters in
+  -- | the old place and those in the new place.
+  exit :: ExitID -> RPG m (S.Set CharID, S.Set CharID)
 
   describeChar :: CharID -> RPG m CharDescription
 
@@ -70,42 +65,26 @@ class HasCID m => Play m where
 
   editMe :: CharDescription -> RPG m ()
 
-  quit :: RPG m ()
+  quit :: RPG m (IDV CharR)
 
 ------------------------------------------------------------
 
 instance (HasCID m, Db m) => Play m where
-  join = withE . update . (, LoggedIn True)  =<< myID
-  quit = withE . update . (, LoggedIn False) =<< myID
+  join = do withE . update . (, LoggedIn True) =<< myID
+            cid <- myID
+            withE $ (,) <$> lookup cid <*> lookup cid
+
+  quit = do withE . update . (, LoggedIn False) =<< myID
+            myHandle
 
   myPID = withE $ lookup =<< myID
              
-  whoAmI = withE $ do cid <- myID
-                      (,) <$> lookup cid <*> lookup cid
-
   myHandle = withE . lookup =<< myID
 
-  whereAmI = do p :: (IDV PlaceR) <- withE . lookup =<< myPID
-                let aidM  = getF p :: Maybe AddressID
-                    n     = getF p :: PlaceName
-                    d     = getF p :: PlaceDescription
-                    f aid = do a :: IDV AddressR <- withE . lookup $ aid
-                               let sid = getF a :: StreetID
-                               s :: IDV StreetR <- withE . lookup $ sid
-                               let cid = getF s :: CityID
-                               c :: IDV CityR <- withE . lookup $ cid
-                               let tid = getF c :: CountryID
-                               t :: IDV CountryRec <- withE . lookup $ tid
-                               let an = getF a :: AddressName
-                                   am = getF a :: AddressNumber
-                                   sn = getF s :: StreetName
-                                   cn = getF c :: CityName
-                                   tn = getF t :: CountryName
-                               return $ fmap (const (an, am, sn, cn, tn)) aid
-                aInfoM <- mapM f aidM
-                return $ fmap (const (n, d, aInfoM)) p
+  whereAmI = withE . lookup =<< myPID
 
-  whatIsHere = withE . lookup =<< myPID
+  whatIsHere = return $ S.singleton t where -- withE . lookup =<< myPID
+    t :: IDV ThingR = Id 555 $ construct (ThingTypeName "ipod", SerialNumber 444)
 
   whoIsHere = S.fromList . IDM.toList <$> (withE . lookup =<< myPID)
 
@@ -115,33 +94,28 @@ instance (HasCID m, Db m) => Play m where
 
   editMe d = withE . update . (, d) =<< myID
 
-  exitDetails er = do
-    r :: IDV PortalRec <- withE . lookup $ portalID er
-    p :: IDV PlaceR    <- withE . lookup $ destinationID er
-    let aidM = getF p :: Maybe AddressID
-    aM :: Maybe (IDV AddressR) <- mapM (withE . lookup) aidM
-    return (direction er, getF r, getF p, aM)
-
   exits = do
-    es <- withE . lookup =<< myPID
-    S.fromList . IDM.toList <$> IDM.mapM exitDetails es
+    pid <- myPID
+    es :: IDM.IDMap ExitRec <- withE $ lookup pid
+    let f er = (dxn, rn, nbr) where
+              (src, dst) = getF er :: (IDV PlaceRec, IDV PlaceRec)
+              rev        = pid == (getF dst :: PlaceID)
+              dxn        = (if rev then reverse else id) (getF er :: Direction)
+              nbr        = if rev then src else dst
+              rn         = getF er :: PortalName
+    return . S.fromList . map (fmap f) . IDM.toList $ es
 
   exit eid = do
-    e@(Id _ er) :: IDV ExitR <- withE $ lookup eid
-    p :: IDV PlaceR <- withE . lookup =<< myPID
-    when (getF p /= sourceID er) $ throwE (InvalidExit eid)
-    cids :: S.Set CharID <- cidsLoggedIn
-    i <- myID
-    withE $ update (i, destinationID er)
-    cids' :: S.Set CharID <- cidsLoggedIn
-    let rid :: PortalID = getF e
-    r  :: IDV PortalRec <- withE $ lookup rid
-    let pn   :: PlaceName       = getF p
-        d    :: Direction       = getF e
-        rn   :: PortalName      = getF r
-        aidM :: Maybe AddressID = getF p
-    aM :: Maybe (IDV AddressR) <- withE $ mapM lookup aidM
-    return (rn, pn, aM, cids, cids', d)
+    Id _ er :: IDV ExitR <- withE $ lookup eid
+    pid <- myPID
+    let cis   = pid == sourceID er
+        trans = pid == destinationID er
+    when (not $ cis || trans) . throwE . InvalidExit $ eid
+    cs :: S.Set CharID <- cidsLoggedInHere
+    let selector = if cis then destinationID else sourceID
+    withE . update . (, selector er) =<< myID
+    cs' :: S.Set CharID <- cidsLoggedInHere
+    return (cs, cs')
 
 
 withE :: Functor m => D m a -> RPG m a

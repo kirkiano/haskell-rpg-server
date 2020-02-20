@@ -7,4 +7,4 @@ import RPG.Event             ( Event )
 import RPG.World             ( CharID )
 
 
-type Result = (Maybe Value, Set (Event, Set CharID))
+type Result = ([Value], Set (Event, Set CharID))
