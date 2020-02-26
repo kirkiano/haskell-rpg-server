@@ -1,0 +1,6 @@
+Consider implementing Haskell classes \co{ToJSONM} and \co{FromJSONM},
+which would serialize and deserialize within a monad, the database
+monad in particular. This would eliminate the need
+for, \eg, \co{PlaceRec}, since all the details of a place could be
+gotten directly from \co{PlaceR} within the database monad, just
+before serialization.

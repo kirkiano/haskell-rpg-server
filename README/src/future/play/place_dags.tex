@@ -1,0 +1,40 @@
+The model
+of \S\S~\ref{sec:play:states:place}~and~\ref{sec:play:states:address}
+forms places into a hierarchical tree. The root is implicitly the
+Earth, places with no address have depth 1, and those with addresses
+have depth 5 (countries have depth 1, cities have depth 2, streets
+have depth 3, and addresses have depth 4). That this model could be
+replaced by a more flexible one can be seen in its inability to
+represent overlap. For example, if two countries are separated by a
+lake, then the current model gives no way of partitioning the lake
+into (at least) three parts, one that falls within one of the
+country's borders, one that falls within the other's, and a third that
+is ``international waters.'' A better model would recognize that the
+three parts of the lake all belong to the same body of water, but that
+two of them also form parts of countries. Such a model would be more
+true to life and would improve the gaming experience. Similarly, if
+buildings should be introduced to the game, then under the current
+model they would have to be made children of addresses, and there
+would be no way to represent, say, a building that sits in some
+country but has no formal address, such as a Mayan temple.
+
+These limitations can be removed if the tree model were replaced by a
+dag (directed acyclic graph). As with the tree, the places that a
+player can actually inhabit remain the leaves (where a leaf in the dag
+context is understood to be a node with no out-edges), but they, along
+with their ancestors, can have more than one parent. This solves the
+problem of the lake that straddles national boundaries. As for the
+temple, not all buildings in the dag model need have addresses as
+parents.
+
+The question then arises as to the order in which a place's ancestors
+should be listed. In a tree, the ancestors of a node form a single
+path to the root, which induces them into a natural linearly ordering
+(\eg,~a~room in a building on an addressed property within a city of a
+country). In a dag, the ancestors form a sub-dag which would have to
+be topologically sorted. Since some of the ancestors will be
+incomparable under the induced ordering (\eg,~should the lake be
+listed before the country, or vice versa?), additional rankings
+will be needed to arrange forcanonical order.
+
+Finally, implementation notes are in \secref{future:impl:place_dags}.
