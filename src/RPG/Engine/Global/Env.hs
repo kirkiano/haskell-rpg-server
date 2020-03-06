@@ -95,6 +95,9 @@ instance (Monad m,
           L.Log m (LookupLog DBase i o e)) => LookupM e m Env i o where
   lookupM i = lookupM i . dBase
 
+instance (Monad m, AbsentM e m DBase i) => AbsentM e m Env i where
+  assertAbsentM i = assertAbsentM i . dBase
+
 instance (Monad m,
           UpdateM e m DBase i,
           L.Log m (UpdateLog DBase i e)) => UpdateM e m Env i where

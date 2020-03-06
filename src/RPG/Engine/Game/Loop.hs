@@ -8,8 +8,11 @@ import qualified RPG.Engine.Log           as L
 import RPG.World                          ( CharID )
 import RPG.Engine.Player                  ( Player(Player) )
 import RPG.Event                          ( Event )
-import RPG.Message                        ( Message(..), CharMessage(..), )
-import RPG.Request                        ( Request(..), isJoin, isQuit )
+import RPG.Message                        ( Message(..),
+                                            CharMessage(..), )
+import RPG.Request                        ( Request(..), 
+                                            CharRequest(Quit),
+                                            isJoin, isQuit )
 import RPG.Engine.Game.Play               ( play )
 import RPG.DB                             ( Db )
 import qualified RPG.Error.Data           as D
@@ -17,7 +20,7 @@ import RPG.Engine.Drive                   ( Drive(..) )
 import RPG.Error                          ( Error(DataError, CharLoggedOut) )
 import RPG.Engine.Game.LoopState          ( L,
                                             notify,
-                                            isCharIDRegistered,
+                                            isCharIDLoggedIn,
                                             addEventSender,
                                             dropEventSender )
 
@@ -31,8 +34,8 @@ gameLoop nextRequest = forever $ lift nextRequest >>= handle where
     L.log L.Info q
     maybe (return ()) (loginChar sendMsg) $ isJoin q
     (msgs, ers) <- drive q
-    mapM_ report msgs
     mapM_ (uncurry notify) ers
+    mapM_ report msgs
     maybe (return ()) logoutChar $ isQuit q
     where
       report msg = L.log (logLevel msg) msg >> lift (sendMsg msg) where
@@ -65,16 +68,13 @@ drive q@(CreateChar n d pid) = runAndMsg q f $ CharCreated n where
 drive q@(DestroyChar cid) = runAndMsg q f CharDestroyed where
   f = deleteCharacter cid >> return cid
 
-drive q@(CharRequest cid pq) = do
-  loggedIn <- isCharIDRegistered cid
-  if loggedIn then ok else return err where
-    err = ([Error q . CharLoggedOut $ cid], S.empty)
-    ok  = do
-      resultE <- lift $ runReaderT (runExceptT $ play pq) $ Player cid
-      let wrapOk (vs, ers) = (map f vs, ers) where
-            f = CharMessage cid . ValueMessage
-          wrapErr = (, S.empty) . (:[]) . Error q
-      return $ either wrapErr wrapOk resultE
+drive q@(CharRequest cid pq) = isCharIDLoggedIn cid >>= process where
+  process True = either wrapErr wrapOk <$> resultE where
+    resultE          = lift . runReaderT (runExceptT $ play pq) $ Player cid
+    wrapOk (vs, ers) = (map f vs, ers) where f = CharMessage cid . ValueMessage
+    wrapErr          = (, S.empty) . (:[]) . Error q
+  process False = return . (, S.empty) $
+    if pq == Quit then [] else [Error q $ CharLoggedOut cid]
 
 
 runAndMsg :: Monad m =>

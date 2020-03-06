@@ -30,6 +30,9 @@ instance Save e m i o => SaveM e m Player i o where
 instance Lookup e m i o => LookupM e m Player i o where
   lookupM i _ = lookup i
 
+instance Absent e m i => AbsentM e m Player i where
+  assertAbsentM i _ = assertAbsent i
+
 instance Update e m i => UpdateM e m Player i where
   updateM i _ = update i
 

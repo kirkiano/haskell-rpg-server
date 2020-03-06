@@ -2,7 +2,7 @@
 module RPG.Engine.Game.LoopState ( L,
                                    LoopState(LoopState),
                                    notify,
-                                   isCharIDRegistered,
+                                   isCharIDLoggedIn,
                                    addEventSender,
                                    dropEventSender ) where
 
@@ -36,6 +36,8 @@ addEventSender cid sndr = modify' $ LoopState . (M.insert cid sndr) . emap
 dropEventSender :: Monad m => CharID -> L m ()
 dropEventSender cid = modify' $ LoopState . M.delete cid . emap
 
+isCharIDLoggedIn :: Monad m => CharID -> L m Bool
+isCharIDLoggedIn = isCharIDRegistered
 
 isCharIDRegistered :: Monad m => CharID -> L m Bool
 isCharIDRegistered cid = M.member cid <$> gets emap

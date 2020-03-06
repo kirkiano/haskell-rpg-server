@@ -46,7 +46,7 @@ extra-deps:
 - bytestring-0.10.8.2
 - concurrent-extra-0.7.0.12
 - containers-0.6.0.1
-- exceptions-0.10.3
+- exceptions-0.10.4
 - monadIO-0.11.1.0
 - network-2.8.0.1
 - network-simple-0.4.1
@@ -60,13 +60,13 @@ extra-deps:
 - unix-2.7.2.2
 - utf8-string-1.0.1.1
 - git: git@github.com-kirkiano:kirkiano/haskell-loggit.git
-  commit: d5ebbe57a1e70176a051c515f81f98bd8f44ead9
+  commit: fde271307d63e88de128f004204cbcd66f1ab92b
 - git: git@github.com-kirkiano:kirkiano/haskell-send-receive.git
-  commit: 14a586059b90b26e6670159c8d8823804ed14fa3
+  commit: 95e5309a0dd804fa2f1c3a8c8f50ef9b84da922d
 - git: git@github.com-kirkiano:kirkiano/rpg-common-haskell.git
-  commit: a9365599d920b6aff1a056d7dfe51671583d8396
+  commit: bfc274da38c95380fb1b46d7e9369472b9a2f137
 - git: git@github.com-kirkiano:kirkiano/rpg-db-haskell.git
-  commit: 7feb587f8af9a6c8273b860ff531e693be742ba9
+  commit: 0f2d04ad0763fdcaf138da25127dc4a3c7682c07
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

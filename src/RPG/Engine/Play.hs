@@ -83,8 +83,8 @@ instance (HasCID m, Db m) => Play m where
 
   whereAmI = withE . lookup =<< myPID
 
-  whatIsHere = return $ S.singleton t where -- withE . lookup =<< myPID
-    t :: IDV ThingR = Id 555 $ construct (ThingTypeName "ipod", SerialNumber 444)
+  whatIsHere = {-return $ S.singleton t where -} withE . lookup =<< myPID
+-- t :: IDV ThingR = Id 555 $ construct (ThingTypeName "ipod", SerialNumber 444)
 
   whoIsHere = S.fromList . IDM.toList <$> (withE . lookup =<< myPID)
 
