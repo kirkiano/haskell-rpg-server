@@ -1,0 +1,16 @@
+version: '3.2'
+
+services:
+  front-expr-test:
+    image: docker.kirkiano.org/finance-server-front-express-test
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test
+    container_name: fin-front-expr-test
+    environment:
+      - STORE_HOST
+      - STORE_PORT
+      - STORE_API_VERSION
+      - INGESTER_HOST
+      - INGESTER_PORT
+      - INGESTER_API_VERSION

@@ -1,0 +1,21 @@
+FROM node:12.3.1-slim
+
+ARG SRCDIR=/app
+
+# Create app directory
+RUN mkdir -p $SRCDIR
+WORKDIR $SRCDIR
+
+# Versions
+RUN npm -v
+RUN node -v
+
+COPY package.json $SRCDIR
+COPY package-lock.json $SRCDIR
+
+RUN npm install
+
+COPY . $SRCDIR
+
+ENTRYPOINT []
+CMD ["bash"]

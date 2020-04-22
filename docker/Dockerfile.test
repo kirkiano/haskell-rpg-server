@@ -1,0 +1,7 @@
+FROM docker.kirkiano.org/finance-server-front-express-base
+
+# Environment variables
+ENV NODE_ENV test
+
+# Main command
+CMD [ "npm", "run", "test:unit" ]
