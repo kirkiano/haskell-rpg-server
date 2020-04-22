@@ -1,3 +1,4 @@
+* Parameterize DB name and user in settings.
 * Remove logging of connections. That should be done by the live driver,
   and it can be as simple as writing to a logfile rather than the db.
 * Delete Versioning.hs?

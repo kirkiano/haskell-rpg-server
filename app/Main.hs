@@ -1,9 +1,11 @@
 
 module Main ( main ) where
 
+import Prelude                       hiding ( init )
 import RPG.Engine.Common
 import Control.Monad.Trans.State            ( evalStateT )
 import qualified Control.Concurrent         as C
+import Control.Exception                    ( throw )
 import Control.Concurrent.STM               ( atomically )
 import Control.Concurrent.STM.TQueue        ( newTQueue,
                                               readTQueue,
@@ -33,17 +35,18 @@ main :: IO ()
 main = G.getSettings >>= go where
   go s = print s >> putStrLn "" >> bracket startup (shutdown s) queryUser where
     lh      = (G.logThresh s, stdout)
-    startup = do
-      Right e <- runReaderT (runReaderT (runExceptT G.createEnv) s) lh
-      q       <- atomically newTQueue
-      let dequeue  = liftIO . atomically . readTQueue $ q
-          sPort    = G.tcpPort s
-          toGame x = liftIO . atomically $ writeTQueue q x
-          drive c  = void $ evalStateT (driverAction toGame c) S.empty
-          slst     = K.listen sPort drive
-          frk      = C.forkIO . (G.runG e lh)
-      _ <- frk $ evalStateT (gameLoop dequeue) $ LoopState M.empty
-      TopEnv e <$> frk slst
+    startup = init >>= either throw run where
+      init     = runReaderT (runReaderT (runExceptT G.createEnv) s) lh
+      run _env = do
+        q       <- atomically newTQueue
+        let dequeue  = liftIO . atomically . readTQueue $ q
+            sPort    = G.tcpPort s
+            toGame x = liftIO . atomically $ writeTQueue q x
+            drive c  = void $ evalStateT (driverAction toGame c) S.empty
+            slst     = K.listen sPort drive
+            frk      = C.forkIO . (G.runG _env lh)
+        _ <- frk $ evalStateT (gameLoop dequeue) $ LoopState M.empty
+        TopEnv _env <$> frk slst
 
 
 queryUser :: TopEnv -> IO ()

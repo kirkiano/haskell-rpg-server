@@ -70,6 +70,9 @@ instance Show a => L.Log G a where
 
 type DBConnError = Either (Either () IOError) Error
 
+instance Exception DBConnError
+
+
 createEnv :: (MonadIO m) => ExceptT DBConnError (ReaderT S.Settings m) Env
 createEnv = Env <$> connDB <*> (lift $ asks S.saveUtterances) where
   connDB  = do pg <- lift $ asks S.pgSettings
